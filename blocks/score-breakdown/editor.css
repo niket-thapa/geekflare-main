@@ -1,0 +1,22 @@
+/**
+ * Score Breakdown Block - Editor Styles
+ * 
+ * These classes are safelisted in tailwind.config.js to ensure they're included:
+ * - bg-success-600, bg-success-50
+ * - bg-warning-600, bg-warning-50
+ * - bg-error-600, bg-error-50
+ * - rounded-l-full
+ * 
+ * Styles are primarily handled by the main theme stylesheet (dist/style.css)
+ */
+
+/* Explicit class references for Tailwind safelist (these are dynamically generated in JS) */
+.bg-success-600,
+.bg-success-50,
+.bg-warning-600,
+.bg-warning-50,
+.bg-error-600,
+.bg-error-50 {
+  /* Classes are defined in main theme stylesheet */
+}
+

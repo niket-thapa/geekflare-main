@@ -1,0 +1,101 @@
+/**
+ * Pros & Cons Block - Editor Styles
+ * Styles for the pros-cons block in the editor
+ */
+
+/* Override any WordPress core styles that might interfere */
+.editor-styles-wrapper .pros-cons-editor h3,
+.editor-styles-wrapper .pros-cons-editor h4,
+.block-editor-block-preview .pros-cons-editor h3,
+.block-editor-block-preview .pros-cons-editor h4 {
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure cards display correctly in editor */
+.editor-styles-wrapper .pros-cons-editor .pros-card,
+.editor-styles-wrapper .pros-cons-editor .cons-card,
+.block-editor-block-preview .pros-cons-editor .pros-card,
+.block-editor-block-preview .pros-cons-editor .cons-card {
+  box-sizing: border-box;
+}
+
+/* Seamless inline editing experience */
+.pros-cons-editor .pros-item,
+.pros-cons-editor .cons-item {
+  position: relative;
+  min-height: 24px;
+  transition: background-color 0.15s ease;
+}
+
+.pros-cons-editor .pros-item:hover,
+.pros-cons-editor .cons-item:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+}
+
+/* RichText editing styles */
+.pros-cons-editor .pros-item .wp-block-rich-text,
+.pros-cons-editor .cons-item .wp-block-rich-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.pros-cons-editor .pros-item .wp-block-rich-text [contenteditable="true"],
+.pros-cons-editor .cons-item .wp-block-rich-text [contenteditable="true"] {
+  outline: none;
+  cursor: text;
+  min-height: 20px;
+  line-height: 1.5;
+}
+
+.pros-cons-editor .pros-item .wp-block-rich-text [contenteditable="true"]:focus,
+.pros-cons-editor .cons-item .wp-block-rich-text [contenteditable="true"]:focus {
+  outline: 2px solid #2271b1;
+  outline-offset: 2px;
+  border-radius: 2px;
+  background-color: rgba(34, 113, 177, 0.05);
+}
+
+/* Placeholder styling */
+.pros-cons-editor .pros-item [data-placeholder]:empty:before,
+.pros-cons-editor .cons-item [data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: #999;
+  opacity: 0.6;
+  font-style: italic;
+}
+
+/* Remove button styling */
+.pros-cons-editor .pros-cons-remove-button {
+  transition: opacity 0.2s ease;
+  padding: 4px 8px;
+  min-width: auto;
+  height: auto;
+  line-height: 1;
+}
+
+.pros-cons-editor .pros-item:hover .pros-cons-remove-button,
+.pros-cons-editor .cons-item:hover .pros-cons-remove-button {
+  opacity: 1 !important;
+}
+
+/* Ensure proper spacing for RichText */
+.pros-cons-editor .pros-item [contenteditable="true"] p,
+.pros-cons-editor .cons-item [contenteditable="true"] p {
+  margin: 0;
+  display: inline;
+}
+
+.pros-cons-editor .pros-item [contenteditable="true"] br,
+.pros-cons-editor .cons-item [contenteditable="true"] br {
+  display: none;
+}
+
+/* Add button styling */
+.pros-cons-editor .pros-list > .components-button,
+.pros-cons-editor .cons-list > .components-button {
+  margin-top: 8px;
+}

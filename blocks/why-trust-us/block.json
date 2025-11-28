@@ -1,0 +1,49 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "main/why-trust-us",
+  "title": "Why Trust Us",
+  "category": "main",
+  "icon": "shield",
+  "description": "Collapsible section explaining methodology and credentials",
+  "keywords": ["trust", "methodology", "credentials"],
+  "textdomain": "main",
+  "editorStyle": "file:./editor.css",
+  "style": "file:./style.css",
+  "viewScript": "file:./view.js",
+  "render": "file:./render.php",
+  "attributes": {
+    "heading": {
+      "type": "string",
+      "default": "Why Trust Our Guide"
+    },
+    "description": {
+      "type": "string",
+      "default": ""
+    },
+    "dataPoints": {
+      "type": "array",
+      "default": [
+        {
+          "value": "500+",
+          "label": "Tools Analyzed"
+        },
+        {
+          "value": "10+",
+          "label": "Top Picks"
+        },
+        {
+          "value": "100+",
+          "label": "Hours Research"
+        },
+        {
+          "value": "9+",
+          "label": "Expert Team"
+        }
+      ]
+    }
+  },
+  "supports": {
+    "html": false
+  }
+}

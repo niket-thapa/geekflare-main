@@ -1,0 +1,25 @@
+/**
+ * Why Trust Us Block - Editor Styles
+ * Styles for the why-trust-us block in the editor
+ */
+
+/* Ensure gradient text works in editor */
+.editor-styles-wrapper
+  .why-trust-us-editor
+  span[class*="bg-gradient"],
+.block-editor-block-preview
+  .why-trust-us-editor
+  span[class*="bg-gradient"] {
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+
+/* Override any WordPress core styles that might interfere */
+.editor-styles-wrapper .why-trust-us-editor h2,
+.block-editor-block-preview .why-trust-us-editor h2 {
+  margin: 0;
+  padding: 0;
+}
+

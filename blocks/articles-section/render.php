@@ -1,0 +1,148 @@
+<?php
+/**
+ * Articles Section Block Template
+ *
+ * @var array $attributes Block attributes.
+ * @var string $content Block default content.
+ * @var WP_Block $block Block instance.
+ *
+ * @package Main
+ * @since 1.0.0
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
+$heading = $attributes['heading'] ?? 'Most popular guides';
+$subheading = $attributes['subheading'] ?? 'Trusted by thousands of businesses worldwide';
+$category_ids = $attributes['categories'] ?? array();
+$post_limit = isset( $attributes['postLimit'] ) ? intval( $attributes['postLimit'] ) : 6;
+$button_text = $attributes['buttonText'] ?? 'Read More Articles';
+$button_link_type = $attributes['buttonLinkType'] ?? 'custom';
+$button_link_id = $attributes['buttonLinkId'] ?? '';
+$button_custom_url = $attributes['buttonCustomUrl'] ?? '#';
+
+// Build button URL based on link type
+$button_url = '#';
+if ( $button_link_type === 'category' && ! empty( $button_link_id ) ) {
+	$button_url = get_category_link( intval( $button_link_id ) );
+} elseif ( $button_link_type === 'tag' && ! empty( $button_link_id ) ) {
+	$button_url = get_tag_link( intval( $button_link_id ) );
+} elseif ( $button_link_type === 'custom' ) {
+	$button_url = $button_custom_url;
+}
+
+// Ensure category_ids is an array
+if ( ! is_array( $category_ids ) ) {
+	$category_ids = array();
+}
+
+// Filter out invalid IDs
+$category_ids = array_filter( array_map( 'intval', $category_ids ) );
+
+if ( empty( $category_ids ) ) {
+	return;
+}
+
+// Get posts from selected categories
+$posts = get_posts( array(
+	'post_type'      => 'post',
+	'posts_per_page' => $post_limit,
+	'category__in'   => $category_ids,
+	'orderby'        => 'date',
+	'order'          => 'DESC',
+) );
+?>
+
+<section class="articles-section bg-gray-25 py-16 md:py-24">
+	<div class="container-1056 flex flex-col items-center gap-12 md:gap-14">
+		<div class="flex flex-col items-center text-center gap-3 md:gap-4">
+			<?php if ( ! empty( $heading ) ) : ?>
+				<div class="text-3xl md:text-5xl font-bold font-gilroy text-gray-900 leading-none">
+					<?php echo wp_kses_post( nl2br( $heading ) ); ?>
+				</div>
+			<?php endif; ?>
+			<?php if ( ! empty( $subheading ) ) : ?>
+				<div class="text-sm font-medium text-gray-500 tracking-2p md:text-base md:tracking-1p">
+					<?php echo wp_kses_post( nl2br( $subheading ) ); ?>
+				</div>
+			<?php endif; ?>
+		</div>
+
+		<?php if ( ! empty( $posts ) ) : ?>
+			<div class="w-full flex flex-col gap-14 md:grid md:grid-cols-2 md:gap-14 lg:grid-cols-3 xl:gap-12">
+				<?php foreach ( $posts as $post ) : ?>
+					<?php
+					setup_postdata( $post );
+					
+					// Get primary category
+					$categories = get_the_category( $post->ID );
+					$primary_category = ! empty( $categories ) ? $categories[0] : null;
+					$category_name = $primary_category ? $primary_category->name : '';
+					$category_url = $primary_category ? get_category_link( $primary_category->term_id ) : '#';
+					
+					// Get excerpt
+					$excerpt = $post->post_excerpt;
+					if ( empty( $excerpt ) ) {
+						$excerpt = wp_trim_words( $post->post_content, 20, '...' );
+					}
+					?>
+					<article class="flex flex-col gap-5.5 md:gap-6">
+						<div class="relative rounded-2xl overflow-hidden">
+							<?php if ( has_post_thumbnail( $post->ID ) ) : ?>
+								<?php echo get_the_post_thumbnail( $post->ID, 'large', array( 'class' => 'w-full object-cover' ) ); ?>
+							<?php else : ?>
+								<img
+									src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23e5e7eb' width='400' height='300'/%3E%3C/svg%3E"
+									alt="<?php echo esc_attr( get_the_title( $post->ID ) ); ?>"
+									class="w-full object-cover" />
+							<?php endif; ?>
+						</div>
+						<div class="flex flex-col gap-4">
+							<?php if ( ! empty( $category_name ) ) : ?>
+								<a href="<?php echo esc_url( $category_url ); ?>" class="text-xs font-semibold tracking-widest uppercase text-primary">
+									<?php echo esc_html( $category_name ); ?>
+								</a>
+							<?php endif; ?>
+							<div class="flex flex-col gap-2">
+								<h3 class="text-lg font-semibold text-gray-900 md:-tracking-2p">
+									<a href="<?php echo esc_url( get_permalink( $post->ID ) ); ?>">
+										<?php echo esc_html( get_the_title( $post->ID ) ); ?>
+									</a>
+								</h3>
+								<?php if ( ! empty( $excerpt ) ) : ?>
+									<div class="text-sm font-medium text-gray-500 tracking-2p leading-5 line-clamp-1 md:tracking-1p">
+										<?php echo esc_html( $excerpt ); ?>
+									</div>
+								<?php endif; ?>
+							</div>
+						</div>
+					</article>
+				<?php endforeach; ?>
+				<?php wp_reset_postdata(); ?>
+			</div>
+		<?php endif; ?>
+
+		<div class="flex justify-center">
+			<a href="<?php echo esc_url( $button_url ); ?>" class="btn btn--primary rounded-full">
+				<?php echo esc_html( $button_text ); ?>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="button-icon"
+					width="16"
+					height="16"
+					fill="none"
+					viewBox="0 0 16 16">
+					<path
+						stroke="#fff"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="1.5"
+						d="M6 3.333 10.667 8 6 12.666" />
+				</svg>
+			</a>
+		</div>
+	</div>
+</section>
+
