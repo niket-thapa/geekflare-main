@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "main/product-list",
+  "title": "Product List",
+  "category": "main",
+  "icon": "list-view",
+  "description": "container for product review items",
+  "keywords": ["products", "list", "reviews"],
+  "textdomain": "main",
+  "editorStyle": "file:./editor.css",
+  "style": "file:./style.css",
+  "render": "file:./render.php",
+  "attributes": {},
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"]
+  }
+}

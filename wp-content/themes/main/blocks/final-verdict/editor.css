@@ -1,0 +1,90 @@
+/**
+ * Final Verdict Block - Editor Styles
+ * Styles for the final-verdict block in the editor
+ */
+
+/* Override any WordPress core styles that might interfere */
+.editor-styles-wrapper .final-verdict-editor h2,
+.editor-styles-wrapper .final-verdict-editor h4,
+.block-editor-block-preview .final-verdict-editor h2,
+.block-editor-block-preview .final-verdict-editor h4 {
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure sections display correctly in editor */
+.editor-styles-wrapper .final-verdict-editor [class*="bg-\[#"],
+.block-editor-block-preview .final-verdict-editor [class*="bg-\[#"] {
+  box-sizing: border-box;
+}
+
+/* Seamless inline editing experience */
+.final-verdict-editor .group {
+  position: relative;
+  min-height: 24px;
+  transition: background-color 0.15s ease;
+}
+
+.final-verdict-editor .group:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+}
+
+/* RichText editing styles */
+.final-verdict-editor .group .wp-block-rich-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.final-verdict-editor .group .wp-block-rich-text [contenteditable="true"] {
+  outline: none;
+  cursor: text;
+  min-height: 20px;
+  line-height: 1.5;
+}
+
+.final-verdict-editor .group .wp-block-rich-text [contenteditable="true"]:focus {
+  outline: 2px solid #2271b1;
+  outline-offset: 2px;
+  border-radius: 2px;
+  background-color: rgba(34, 113, 177, 0.05);
+}
+
+/* Placeholder styling */
+.final-verdict-editor .group [data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: #999;
+  opacity: 0.6;
+  font-style: italic;
+}
+
+/* Remove button styling */
+.final-verdict-editor .final-verdict-remove-button {
+  transition: opacity 0.2s ease;
+  padding: 4px 8px;
+  min-width: auto;
+  height: auto;
+  line-height: 1;
+}
+
+.final-verdict-editor .group:hover .final-verdict-remove-button {
+  opacity: 1 !important;
+}
+
+/* Ensure proper spacing for RichText */
+.final-verdict-editor .group [contenteditable="true"] p {
+  margin: 0;
+  display: inline;
+}
+
+.final-verdict-editor .group [contenteditable="true"] br {
+  display: none;
+}
+
+/* Add button styling */
+.final-verdict-editor .components-button {
+  margin-top: 8px;
+}
+
