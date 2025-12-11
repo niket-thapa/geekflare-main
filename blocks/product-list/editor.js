@@ -9,6 +9,7 @@
   var Button = wp.components.Button;
   var Spinner = wp.components.Spinner;
   var TextControl = wp.components.TextControl;
+  var ToggleControl = wp.components.ToggleControl;
   var __ = wp.i18n.__;
   var apiFetch = wp.apiFetch;
   var useState = wp.element.useState;
@@ -258,6 +259,32 @@
       return el(
         "div",
         blockProps,
+        // Sidebar Block Settings
+        el(
+          InspectorControls,
+          {},
+          el(
+            PanelBody,
+            {
+              title: __("Block Settings", "main"),
+              initialOpen: true,
+            },
+            el(ToggleControl, {
+              label: __("Show Product Number", "main"),
+              checked:
+                attributes.showProductNumber !== undefined
+                  ? attributes.showProductNumber
+                  : true,
+              onChange: function (value) {
+                setAttributes({ showProductNumber: value });
+              },
+              help: __(
+                "Show or hide the product number badge on each product item",
+                "main"
+              ),
+            })
+          )
+        ),
         // Bulk Add Section
         el(
           "div",

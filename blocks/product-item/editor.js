@@ -92,10 +92,20 @@
             return innerBlock.clientId === clientId;
           });
 
+          // Get parent block's showProductNumber attribute
+          var showProductNumber = true; // Default to true
+          if (parentBlock && parentBlock.attributes) {
+            showProductNumber =
+              parentBlock.attributes.showProductNumber !== undefined
+                ? parentBlock.attributes.showProductNumber
+                : true;
+          }
+
           return {
             blocks: productItemBlocks,
             productIds: productIds,
             blockIndex: index >= 0 ? index + 1 : 1,
+            showProductNumber: showProductNumber,
           };
         },
         [clientId]
@@ -103,6 +113,10 @@
 
       var blockIndex = siblingProducts.blockIndex || 1;
       var existingProductIds = siblingProducts.productIds || [];
+      var showProductNumber =
+        siblingProducts.showProductNumber !== undefined
+          ? siblingProducts.showProductNumber
+          : true;
 
       // CORRECTED: Properly destructure useState
       var searchState = useState("");
@@ -1003,21 +1017,22 @@
               )
             )
         ),
-        // Product Number
-        el(
-          "div",
-          {
-            className:
-              "product-number " + (attributes.isHighlighted ? "active" : ""),
-            "aria-label":
-              "Rank " + (attributes.productNumber || blockIndex || 1),
-          },
+        // Product Number (only show if parent allows it)
+        showProductNumber &&
           el(
-            "span",
-            { "aria-hidden": "true" },
-            attributes.productNumber || blockIndex || 1
-          )
-        ),
+            "div",
+            {
+              className:
+                "product-number " + (attributes.isHighlighted ? "active" : ""),
+              "aria-label":
+                "Rank " + (attributes.productNumber || blockIndex || 1),
+            },
+            el(
+              "span",
+              { "aria-hidden": "true" },
+              attributes.productNumber || blockIndex || 1
+            )
+          ),
 
         // Main content wrapper with padding
         el(
