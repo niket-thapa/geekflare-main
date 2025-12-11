@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "main/honorable-mentions",
+  "title": "Honorable Mentions",
+  "category": "main",
+  "icon": "awards",
+  "description": "Display a list of additional products",
+  "keywords": ["products", "mentions", "additional"],
+  "textdomain": "main",
+  "editorStyle": "file:./editor.css",
+  "style": "file:./style.css",
+  "render": "file:./render.php",
+  "attributes": {
+    "heading": {
+      "type": "string",
+      "default": "Honorable Mentions"
+    },
+    "designType": {
+      "type": "string",
+      "default": "honorable-mentions",
+      "enum": ["honorable-mentions", "top-alternatives"]
+    },
+    "products": {
+      "type": "array",
+      "default": []
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"]
+  }
+}

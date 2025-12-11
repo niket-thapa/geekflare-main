@@ -1,0 +1,29 @@
+/**
+ * Info Box Block - Editor Styles
+ * Ensures styles match frontend exactly
+ */
+
+/* Info box editor wrapper */
+.info-box-editor {
+  /* Styles are handled by Tailwind classes matching render.php */
+}
+
+/* Ensure RichText editing works properly */
+.info-box-editor h4 {
+  outline: none;
+}
+
+.info-box-editor h4:focus {
+  outline: 1px dotted currentColor;
+}
+
+.info-box-editor [contenteditable]:focus {
+  outline: 1px dotted currentColor;
+}
+
+/* Ensure icon displays correctly */
+.info-box-editor img {
+  max-width: none;
+}
+
+

@@ -1,0 +1,9 @@
+.honorable-mentions-editor article:hover .honorable-mentions-remove-btn {
+  opacity: 1 !important;
+}
+
+.honorable-mentions-editor .honorable-mentions-remove-btn {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
