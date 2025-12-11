@@ -382,6 +382,26 @@ function main_enqueue_block_editor_assets() {
 				font-size: 1rem;
 			}
 		}
+
+		.schema-faq-section .schema-faq-question {
+			display: block !important;
+			position: relative;
+		}
+
+		.schema-faq-section .schema-faq-question:after {
+			position: absolute;
+			inset-inline-end: 0;
+		}
+
+		.buying_guide_item {
+			margin-bottom: 50px;
+		}
+
+		.buying_guide_item .product-score-breakdown,
+		.buying_guide_item .key-features,
+		.buying_guide_item .pros-cons {
+			margin-bottom: 30px;
+		}
 		
 		/* Paragraphs */
 		.editor-styles-wrapper p {

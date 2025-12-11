@@ -29,6 +29,14 @@
     "showUpdateLogs": {
       "type": "boolean",
       "default": true
+    },
+    "hasAutoLoadedBlocks": {
+      "type": "boolean",
+      "default": false
+    },
+    "autoLoadedForProductId": {
+      "type": "number",
+      "default": 0
     }
   },
   "supports": {

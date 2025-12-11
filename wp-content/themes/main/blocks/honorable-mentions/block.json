@@ -12,10 +12,6 @@
   "style": "file:./style.css",
   "render": "file:./render.php",
   "attributes": {
-    "heading": {
-      "type": "string",
-      "default": "Honorable Mentions"
-    },
     "designType": {
       "type": "string",
       "default": "honorable-mentions",

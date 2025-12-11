@@ -9,12 +9,14 @@
   var Button = wp.components.Button;
   var Spinner = wp.components.Spinner;
   var TextControl = wp.components.TextControl;
+  var ToggleControl = wp.components.ToggleControl;
   var __ = wp.i18n.__;
   var apiFetch = wp.apiFetch;
   var useState = wp.element.useState;
   var useEffect = wp.element.useEffect;
   var useSelect = wp.data.useSelect;
   var useDispatch = wp.data.useDispatch;
+  var useRef = wp.element.useRef;
 
   var ALLOWED_BLOCKS = ["main/product-item"];
 
@@ -24,13 +26,10 @@
       var setAttributes = props.setAttributes;
       var clientId = props.clientId;
 
-      // Get block props to make the block selectable
       var blockProps = useBlockProps({
-        className:
-          "product-list-editor flex flex-col gap-7.5 pb-8 md:pb-12 lg:pb-20",
+        className: "product-list-editor flex flex-col gap-7.5 pb-3 md:pb-4",
       });
 
-      // State for category selection and products
       var categoriesState = useState([]);
       var categories = categoriesState[0];
       var setCategories = categoriesState[1];
@@ -59,18 +58,34 @@
       var isSearching = isSearchingState[0];
       var setIsSearching = isSearchingState[1];
 
-      // Get dispatch functions
-      var dispatch = useDispatch("core/block-editor");
-      var insertBlocks = dispatch ? dispatch.insertBlocks : null;
-      var removeBlock = dispatch ? dispatch.removeBlock : null;
+      var dragState = useState({
+        isDragging: false,
+        dragIndex: null,
+        hoverIndex: null,
+      });
+      var dragInfo = dragState[0];
+      var setDragInfo = dragState[1];
 
-      var getBlock = useSelect
-        ? useSelect(function (select) {
-            return select("core/block-editor").getBlock;
-          }, [])
-        : null;
+      var containerRef = useRef(null);
+      var itemRefs = useRef([]);
+      var dragRef = useRef({
+        active: false,
+        pointerId: null,
+        startY: 0,
+        dragIndex: null,
+        hoverIndex: null,
+        element: null,
+      });
 
-      // Get existing product blocks
+      var _useDispatch = useDispatch("core/block-editor");
+      var insertBlocks = _useDispatch.insertBlocks;
+      var removeBlock = _useDispatch.removeBlock;
+      var moveBlockToPosition = _useDispatch.moveBlockToPosition;
+
+      var getBlock = useSelect(function (select) {
+        return select("core/block-editor").getBlock;
+      }, []);
+
       var productBlocks = useSelect(
         function (select) {
           var blockEditor = select("core/block-editor");
@@ -84,7 +99,6 @@
         [clientId]
       );
 
-      // Get existing product IDs to avoid duplicates
       var existingProductIds = productBlocks
         .map(function (innerBlock) {
           return innerBlock.attributes && innerBlock.attributes.productId
@@ -95,7 +109,6 @@
           return id > 0;
         });
 
-      // Fetch product categories on mount
       useEffect(function () {
         if (categories.length > 0) return;
 
@@ -108,13 +121,11 @@
             setIsLoadingCategories(false);
           })
           .catch(function (error) {
-            console.error("Error fetching categories:", error);
             setCategories([]);
             setIsLoadingCategories(false);
           });
       }, []);
 
-      // Live search effect - triggers when searchQuery changes
       useEffect(
         function () {
           if (!searchQuery || searchQuery.length < 2) {
@@ -125,7 +136,6 @@
 
           setIsSearching(true);
 
-          // Debounce search
           var timer = setTimeout(function () {
             apiFetch({
               path:
@@ -138,11 +148,10 @@
                 setIsSearching(false);
               })
               .catch(function (error) {
-                console.error("Error searching products:", error);
                 setSearchResults([]);
                 setIsSearching(false);
               });
-          }, 300); // 300ms debounce
+          }, 300);
 
           return function () {
             clearTimeout(timer);
@@ -151,7 +160,131 @@
         [searchQuery]
       );
 
-      // Handle category selection and bulk add products
+      // ============================================
+      // POINTER EVENTS BASED DRAG AND DROP
+      // ============================================
+
+      var findHoverIndex = function (mouseY) {
+        var items = itemRefs.current;
+        for (var i = 0; i < items.length; i++) {
+          var item = items[i];
+          if (!item) continue;
+          var rect = item.getBoundingClientRect();
+          var midY = rect.top + rect.height / 2;
+          if (mouseY < midY) {
+            return i;
+          }
+        }
+        return items.length - 1;
+      };
+
+      var handlePointerDown = function (e, index) {
+        if (e.button !== 0) return;
+        if (e.target.closest("button")) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        e.target.setPointerCapture(e.pointerId);
+
+        dragRef.current = {
+          active: true,
+          pointerId: e.pointerId,
+          startY: e.clientY,
+          dragIndex: index,
+          hoverIndex: index,
+          element: e.target,
+          visualDragging: false,
+        };
+
+        // Show highlight immediately on press
+        setDragInfo({
+          isDragging: true,
+          dragIndex: index,
+          hoverIndex: index,
+        });
+
+        document.body.style.cursor = "grabbing";
+        document.body.style.userSelect = "none";
+      };
+
+      var handlePointerMove = function (e) {
+        var data = dragRef.current;
+        if (!data.active) return;
+
+        var deltaY = Math.abs(e.clientY - data.startY);
+
+        // Mark as visual dragging after 5px (for the actual move operation)
+        if (!data.visualDragging && deltaY > 5) {
+          data.visualDragging = true;
+        }
+
+        // Always update hover index while active
+        var newHoverIndex = findHoverIndex(e.clientY);
+        if (data.hoverIndex !== newHoverIndex) {
+          data.hoverIndex = newHoverIndex;
+          setDragInfo({
+            isDragging: true,
+            dragIndex: data.dragIndex,
+            hoverIndex: newHoverIndex,
+          });
+        }
+      };
+
+      var handlePointerUp = function (e) {
+        var data = dragRef.current;
+
+        if (!data.active) return;
+
+        if (data.element && data.pointerId !== null) {
+          try {
+            data.element.releasePointerCapture(data.pointerId);
+          } catch (err) {}
+        }
+
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+
+        // Only perform move if user actually dragged (moved more than 5px)
+        if (data.visualDragging && data.dragIndex !== null) {
+          var finalHoverIndex = findHoverIndex(e.clientY);
+
+          if (finalHoverIndex !== data.dragIndex && moveBlockToPosition) {
+            var blockToMove = productBlocks[data.dragIndex];
+            if (blockToMove) {
+              try {
+                moveBlockToPosition(
+                  blockToMove.clientId,
+                  clientId,
+                  clientId,
+                  finalHoverIndex
+                );
+              } catch (err) {}
+            }
+          }
+        }
+
+        dragRef.current = {
+          active: false,
+          pointerId: null,
+          startY: 0,
+          dragIndex: null,
+          hoverIndex: null,
+          element: null,
+          visualDragging: false,
+        };
+
+        setDragInfo({
+          isDragging: false,
+          dragIndex: null,
+          hoverIndex: null,
+        });
+      };
+
+      var handlePointerCancel = function (e) {
+        handlePointerUp(e);
+      };
+
       var handleCategoryChange = function (categoryId) {
         setSelectedCategory(categoryId);
         if (!categoryId || categoryId === "") {
@@ -208,15 +341,13 @@
             setIsLoadingProducts(false);
           })
           .catch(function (error) {
-            console.error("Error fetching products by category:", error);
             setIsLoadingProducts(false);
           });
       };
 
-      // Handle adding a single product from search
       var handleAddProduct = function (productId) {
         if (existingProductIds.indexOf(parseInt(productId, 10)) !== -1) {
-          return; // Already added
+          return;
         }
 
         var currentBlock = getBlock ? getBlock(clientId) : null;
@@ -228,19 +359,44 @@
 
         insertBlocks([newBlock], currentBlock.innerBlocks.length, clientId);
 
-        // Clear search
         setSearchQuery("");
         setSearchResults([]);
       };
 
-      // Handle removing a product
       var handleRemoveProduct = function (blockId) {
         if (removeBlock) {
           removeBlock(blockId);
         }
       };
 
-      // Prepare category options
+      var handleMoveUp = function (index) {
+        if (index === 0 || !moveBlockToPosition) return;
+
+        var blockToMove = productBlocks[index];
+        if (!blockToMove) return;
+
+        moveBlockToPosition(
+          blockToMove.clientId,
+          clientId,
+          clientId,
+          index - 1
+        );
+      };
+
+      var handleMoveDown = function (index) {
+        if (index === productBlocks.length - 1 || !moveBlockToPosition) return;
+
+        var blockToMove = productBlocks[index];
+        if (!blockToMove) return;
+
+        moveBlockToPosition(
+          blockToMove.clientId,
+          clientId,
+          clientId,
+          index + 1
+        );
+      };
+
       var categoryOptions = [
         {
           label: __("Select a category to add products...", "main"),
@@ -255,10 +411,42 @@
         })
       );
 
+      useEffect(
+        function () {
+          itemRefs.current = itemRefs.current.slice(0, productBlocks.length);
+        },
+        [productBlocks.length]
+      );
+
       return el(
         "div",
         blockProps,
-        // Bulk Add Section
+        el(
+          InspectorControls,
+          {},
+          el(
+            PanelBody,
+            {
+              title: __("Block Settings", "main"),
+              initialOpen: true,
+            },
+            el(ToggleControl, {
+              label: __("Show Product Number", "main"),
+              checked:
+                attributes.showProductNumber !== undefined
+                  ? attributes.showProductNumber
+                  : true,
+              onChange: function (value) {
+                setAttributes({ showProductNumber: value });
+              },
+              help: __(
+                "Show or hide the product number badge on each product item",
+                "main"
+              ),
+            })
+          )
+        ),
+
         el(
           "div",
           {
@@ -284,7 +472,6 @@
             __("Add Products", "main")
           ),
 
-          // Category Selection
           isLoadingCategories
             ? el(
                 "div",
@@ -339,7 +526,6 @@
               )
             ),
 
-          // Search Section (Live AJAX Search)
           el(
             "div",
             { style: { borderTop: "1px solid #dcdcde", paddingTop: "16px" } },
@@ -381,7 +567,6 @@
                 )
             ),
 
-            // Search Results Dropdown (Click item to add)
             searchResults.length > 0 &&
               el(
                 "div",
@@ -445,7 +630,6 @@
                 })
               ),
 
-            // Minimum character message
             searchQuery &&
               searchQuery.length > 0 &&
               searchQuery.length < 2 &&
@@ -466,7 +650,6 @@
                 __("Type at least 2 characters to search", "main")
               ),
 
-            // No results message
             searchQuery &&
               searchQuery.length >= 2 &&
               !isSearching &&
@@ -490,11 +673,11 @@
           )
         ),
 
-        // Added Products List with Remove Option
         productBlocks.length > 0 &&
           el(
             "div",
             {
+              ref: containerRef,
               style: {
                 backgroundColor: "#fff",
                 border: "1px solid #dcdcde",
@@ -518,46 +701,160 @@
             el(
               "div",
               {
-                style: { display: "flex", flexDirection: "column", gap: "8px" },
+                style: {
+                  fontSize: "12px",
+                  color: "#757575",
+                  marginBottom: "12px",
+                  fontStyle: "italic",
+                },
               },
-              productBlocks.map(function (block) {
+              __("Drag items to reorder, or use arrow buttons", "main")
+            ),
+            el(
+              "div",
+              {
+                className: "product-sort-container",
+                style: {
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                },
+              },
+              productBlocks.map(function (block, index) {
+                var isDragging =
+                  dragInfo.isDragging && dragInfo.dragIndex === index;
+                var isHoverTarget =
+                  dragInfo.isDragging &&
+                  dragInfo.hoverIndex === index &&
+                  dragInfo.dragIndex !== index;
+
                 return el(
                   "div",
                   {
                     key: block.clientId,
+                    ref: function (element) {
+                      itemRefs.current[index] = element;
+                    },
+                    onPointerDown: function (e) {
+                      handlePointerDown(e, index);
+                    },
+                    onPointerMove: handlePointerMove,
+                    onPointerUp: handlePointerUp,
+                    onPointerCancel: handlePointerCancel,
                     style: {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
                       padding: "8px 12px",
-                      backgroundColor: "#f0f0f1",
+                      backgroundColor: isHoverTarget
+                        ? "#dbeafe"
+                        : isDragging
+                        ? "#fef3c7"
+                        : "#f0f0f1",
                       borderRadius: "4px",
                       fontSize: "13px",
+                      cursor: dragInfo.isDragging ? "grabbing" : "grab",
+                      opacity: isDragging ? 0.8 : 1,
+                      userSelect: "none",
+                      border: isHoverTarget
+                        ? "2px dashed #3b82f6"
+                        : isDragging
+                        ? "2px solid #f59e0b"
+                        : "2px solid transparent",
+                      transition: "background-color 0.1s, border-color 0.1s",
+                      boxSizing: "border-box",
+                      position: "relative",
+                      touchAction: "none",
                     },
                   },
                   el(
                     "span",
-                    {},
-                    __("Product ID: ", "main") +
+                    {
+                      style: {
+                        marginRight: "8px",
+                        cursor: dragInfo.isDragging ? "grabbing" : "grab",
+                        fontSize: "16px",
+                        color: "#757575",
+                        userSelect: "none",
+                        padding: "0 4px",
+                      },
+                    },
+                    "⋮⋮"
+                  ),
+                  el(
+                    "span",
+                    {
+                      style: {
+                        flex: 1,
+                        pointerEvents: "none",
+                        userSelect: "none",
+                      },
+                    },
+                    "#" +
+                      (index + 1) +
+                      " - " +
+                      __("Product ID: ", "main") +
                       (block.attributes.productId || "N/A")
                   ),
                   el(
-                    Button,
+                    "div",
                     {
-                      isDestructive: true,
-                      isSmall: true,
-                      onClick: function () {
-                        handleRemoveProduct(block.clientId);
+                      onPointerDown: function (e) {
+                        e.stopPropagation();
+                      },
+                      style: {
+                        display: "flex",
+                        gap: "4px",
+                        alignItems: "center",
                       },
                     },
-                    __("Remove", "main")
+                    el(Button, {
+                      icon: "arrow-up-alt2",
+                      isSmall: true,
+                      disabled: index === 0,
+                      onClick: function (e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handleMoveUp(index);
+                      },
+                      label: __("Move Up", "main"),
+                      style: {
+                        minWidth: "30px",
+                      },
+                    }),
+                    el(Button, {
+                      icon: "arrow-down-alt2",
+                      isSmall: true,
+                      disabled: index === productBlocks.length - 1,
+                      onClick: function (e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handleMoveDown(index);
+                      },
+                      label: __("Move Down", "main"),
+                      style: {
+                        minWidth: "30px",
+                      },
+                    }),
+                    el(
+                      Button,
+                      {
+                        isDestructive: true,
+                        isSmall: true,
+                        onClick: function (e) {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          handleRemoveProduct(block.clientId);
+                        },
+                      },
+                      __("Remove", "main")
+                    )
                   )
                 );
               })
             )
           ),
 
-        // Products Preview Section
         el(
           "div",
           {
@@ -607,7 +904,6 @@
               )
           ),
 
-          // InnerBlocks - Visible for preview
           el(
             "div",
             {
@@ -623,7 +919,6 @@
             })
           ),
 
-          // Empty state
           productBlocks.length === 0 &&
             el(
               "div",

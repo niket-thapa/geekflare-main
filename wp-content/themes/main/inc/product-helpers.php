@@ -52,6 +52,22 @@ function main_get_product_data( $product_id ) {
         }
     }
     
+    // Get availability flags from taxonomy
+    $availability_flags = array();
+    if ( defined( 'MAIN_PRODUCTS_AVAILABILITY_TAXONOMY' ) ) {
+        $terms = wp_get_post_terms( $product_id, MAIN_PRODUCTS_AVAILABILITY_TAXONOMY, array( 'fields' => 'names' ) );
+        if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
+            $availability_flags = $terms;
+        }
+    }
+    
+    // Map taxonomy terms to boolean flags for backward compatibility
+    $has_free_trial = in_array( 'Has Free Trial', $availability_flags, true );
+    $has_free_plan = in_array( 'Has Free Plan', $availability_flags, true );
+    $has_demo = in_array( 'Has Demo', $availability_flags, true );
+    $open_source = in_array( 'Open Source', $availability_flags, true );
+    $ai_powered = in_array( 'AI-Powered', $availability_flags, true );
+    
     return array(
         'id'                => $product_id,
         'name'              => get_post_meta( $product_id, 'product_name', true ) ?: $post->post_title,
@@ -64,11 +80,12 @@ function main_get_product_data( $product_id ) {
         'pricing'           => get_post_meta( $product_id, 'pricing_summary', true ),
         'rating'            => (float) get_post_meta( $product_id, 'our_rating', true ),
         'rating_count'      => (int) get_post_meta( $product_id, 'rating_count', true ),
-        'has_free_trial'    => (bool) get_post_meta( $product_id, 'has_free_trial', true ),
-        'has_free_plan'     => (bool) get_post_meta( $product_id, 'has_free_plan', true ),
-        'has_demo'          => (bool) get_post_meta( $product_id, 'has_demo', true ),
-        'open_source'       => (bool) get_post_meta( $product_id, 'open_source', true ),
-        'ai_powered'        => (bool) get_post_meta( $product_id, 'ai_powered', true ),
+        'availability_flags' => $availability_flags,
+        'has_free_trial'    => $has_free_trial,
+        'has_free_plan'     => $has_free_plan,
+        'has_demo'          => $has_demo,
+        'open_source'       => $open_source,
+        'ai_powered'        => $ai_powered,
         'award'             => get_post_meta( $product_id, 'award', true ),
         'custom_note'       => get_post_meta( $product_id, 'custom_note', true ),
         'update_logs'       => $update_logs,
@@ -304,39 +321,37 @@ function main_get_products_by_category( $category_id, $limit = 20 ) {
 function main_get_product_badges( $product ) {
     $badges = array();
     
-    // AI-Powered - gradient badge
-    if ( ! empty( $product['ai_powered'] ) ) {
-        $badges[] = '<button type="button" class="product-badge product-badge--gradient flex flex-row justify-center items-center gap-2.5 rounded-lg md:rounded-xl">
-            <span class="text-sm md:text-base font-semibold leading-[1.375rem] text-gray-800">AI-Powered</span>
-        </button>';
+    // Get availability flags from taxonomy
+    $availability_flags = array();
+    if ( isset( $product['availability_flags'] ) && is_array( $product['availability_flags'] ) ) {
+        $availability_flags = $product['availability_flags'];
+    } elseif ( isset( $product['id'] ) ) {
+        // Fallback: fetch from taxonomy if not in product data
+        if ( defined( 'MAIN_PRODUCTS_AVAILABILITY_TAXONOMY' ) ) {
+            $terms = wp_get_post_terms( $product['id'], MAIN_PRODUCTS_AVAILABILITY_TAXONOMY, array( 'fields' => 'names' ) );
+            if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
+                $availability_flags = $terms;
+            }
+        }
     }
     
-    // Open Source - outline badge
-    if ( ! empty( $product['open_source'] ) ) {
-        $badges[] = '<button type="button" class="product-badge product-badge--outline flex flex-row justify-center items-center py-[0.1875rem] md:py-1.5 px-3 md:px-4 gap-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl">
-            <span class="text-sm md:text-base font-medium leading-[1.375rem] text-gray-800 tracking-2p">Open Source</span>
-        </button>';
-    }
-    
-    // Free Plan - outline badge (removed "Has" prefix)
-    if ( ! empty( $product['has_free_plan'] ) ) {
-        $badges[] = '<button type="button" class="product-badge product-badge--outline flex flex-row justify-center items-center py-[0.1875rem] md:py-1.5 px-3 md:px-4 gap-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl">
-            <span class="text-sm md:text-base font-medium leading-[1.375rem] text-gray-800 tracking-2p">Free Plan</span>
-        </button>';
-    }
-    
-    // Free Trial - outline badge (removed "Has" prefix)
-    if ( ! empty( $product['has_free_trial'] ) ) {
-        $badges[] = '<button type="button" class="product-badge product-badge--outline flex flex-row justify-center items-center py-[0.1875rem] md:py-1.5 px-3 md:px-4 gap-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl">
-            <span class="text-sm md:text-base font-medium leading-[1.375rem] text-gray-800 tracking-2p">Free Trial</span>
-        </button>';
-    }
-    
-    // Demo - outline badge (removed "Has" prefix)
-    if ( ! empty( $product['has_demo'] ) ) {
-        $badges[] = '<button type="button" class="product-badge product-badge--outline flex flex-row justify-center items-center py-[0.1875rem] md:py-1.5 px-3 md:px-4 gap-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl">
-            <span class="text-sm md:text-base font-medium leading-[1.375rem] text-gray-800 tracking-2p">Demo</span>
-        </button>';
+    // Generate badges dynamically from taxonomy terms
+    foreach ( $availability_flags as $flag ) {
+        $flag_name = esc_html( $flag );
+        
+        // Remove "Has" prefix if present for display
+        $display_name = preg_replace( '/^Has\s+/i', '', $flag_name );
+        
+        // AI-Powered gets gradient badge, others get outline badge
+        if ( stripos( $flag, 'AI' ) !== false || stripos( $flag, 'AI-Powered' ) !== false ) {
+            $badges[] = '<span class="product-badge product-badge--gradient flex flex-row justify-center items-center gap-2.5 rounded-lg md:rounded-xl">
+                <span class="text-sm md:text-base font-semibold leading-[1.375rem] text-gray-800">' . $display_name . '</span>
+            </span>';
+        } else {
+            $badges[] = '<span class="product-badge product-badge--outline flex flex-row justify-center items-center py-[0.1875rem] md:py-1.5 px-3 md:px-4 gap-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl">
+                <span class="text-sm md:text-base font-medium leading-[1.375rem] text-gray-800 tracking-2p">' . $display_name . '</span>
+            </span>';
+        }
     }
     
     return implode( "\n", $badges );

@@ -6,13 +6,14 @@
     "build:sidebar": "esbuild ./src/js/editor/sidebar-settings.js --bundle --format=iife --outfile=./dist/sidebar-settings.js --minify --platform=browser --external:@wordpress/*",
     "watch:sidebar": "esbuild ./src/js/editor/sidebar-settings.js --bundle --format=iife --outfile=./dist/sidebar-settings.js --watch --platform=browser --external:@wordpress/*",
     "dev": "npm run watch:css & npm run watch:js & npm run watch:editor & npm run watch:sidebar",
-    "build": "npm run build:css && npm run build:js && npm run build:editor && npm run build:sidebar && npm run build:flickity-css && npm run build:flickity-js && npm run build:flatpickr-css && npm run build:flatpickr-js",
+    "build": "npm run build:css && npm run build:js && npm run build:editor && npm run build:sidebar && npm run build:flickity-css && npm run build:flickity-js && npm run build:flatpickr-css && npm run build:flatpickr-js && npm run build:photoswipe-css",
     "build:css": "tailwindcss -i ./src/css/style.css -o ./dist/style.css --minify",
     "build:js": "esbuild ./src/js/main.js --bundle --format=iife --global-name=MainTheme --outfile=./dist/script.js --minify --platform=browser",
     "build:flickity-css": "cp node_modules/flickity/css/flickity.css ./dist/flickity.css",
     "build:flickity-js": "cp node_modules/flickity/dist/flickity.pkgd.min.js ./dist/flickity.pkgd.min.js",
     "build:flatpickr-css": "cp node_modules/flatpickr/dist/flatpickr.min.css ./dist/flatpickr.min.css",
     "build:flatpickr-js": "cp node_modules/flatpickr/dist/flatpickr.min.js ./dist/flatpickr.min.js",
+    "build:photoswipe-css": "cp node_modules/photoswipe/dist/photoswipe.css ./dist/photoswipe.css",
     "watch:css": "tailwindcss -i ./src/css/style.css -o ./dist/style.css --watch",
     "watch:js": "esbuild ./src/js/main.js --bundle --format=iife --global-name=MainTheme --outfile=./dist/script.js --watch --platform=browser",
     "build:editor": "esbuild ./src/js/editor/template-selector.js --bundle --format=iife --outfile=./dist/template-selector.js --minify --platform=browser --external:@wordpress/*",
@@ -29,7 +30,8 @@
   "dependencies": {
     "flatpickr": "^4.6.13",
     "flickity": "^2.3.0",
-    "lucide": "^0.555.0"
+    "lucide": "^0.555.0",
+    "photoswipe": "^5.4.4"
   },
   "devDependencies": {
     "@savvywombat/tailwindcss-grid-areas": "^4.0.0",

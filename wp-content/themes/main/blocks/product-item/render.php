@@ -49,20 +49,27 @@ if ( is_wp_error( $features_terms ) ) {
     $features_terms = array();
 }
 
+// Get Availability terms
+$availability_terms = wp_get_post_terms( $product_id, MAIN_PRODUCTS_AVAILABILITY_TAXONOMY, array( 'fields' => 'slugs' ) );
+if ( is_wp_error( $availability_terms ) ) {
+    $availability_terms = array();
+}
+
+// Combine availability terms with features terms for filtering
+$combined_features_terms = array_merge( $availability_terms, $features_terms );
+
 // Prepare filter data as JSON
 $filter_data = array(
     'pricing' => $pricing_value,
     'bestSuited' => $best_suited_terms,
-    'features' => $features_terms,
+    'features' => $combined_features_terms,
 );
 ?>
 
 <article 
     id="<?php echo esc_attr( $product_slug ); ?>"
     class="buying_guide_item bg-white border border-gray-200 rounded-2xl md:rounded-3xl relative <?php echo $is_highlighted ? 'mt-[1.3125rem] md:mt-0' : 'mt-[1.3125rem] md:mt-0'; ?>"
-    data-product-filter='<?php echo wp_json_encode( $filter_data ); ?>'
-    itemscope
-    itemtype="https://schema.org/SoftwareApplication">
+    data-product-filter='<?php echo wp_json_encode( $filter_data ); ?>'>
     
     <!-- Product Number -->
     <div class="product-number <?php echo $is_highlighted ? 'active' : ''; ?>" aria-label="Rank <?php echo esc_attr( $product_number ); ?>">

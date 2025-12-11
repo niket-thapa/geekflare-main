@@ -18,47 +18,82 @@ $show_toc = main_sidebar_show_toc( $post_id );
 $show_filters = main_sidebar_show_filters( $post_id );
 $headings = main_get_post_headings( $post_id );
 
-// Get all Best Suited For terms (only if filters are enabled)
-$best_suited_terms = array();
+// Get product IDs from Product List blocks in this post
+$product_ids = array();
 if ( $show_filters ) {
-	$best_suited_terms = get_terms(
+	$post_content = get_post_field( 'post_content', $post_id );
+	if ( $post_content && has_blocks( $post_content ) ) {
+		$blocks = parse_blocks( $post_content );
+		
+		// Recursive function to find all product-list blocks and extract product IDs
+		$find_product_ids = function( $blocks ) use ( &$find_product_ids, &$product_ids ) {
+			foreach ( $blocks as $block ) {
+				// Check if this is a product-list block
+				if ( isset( $block['blockName'] ) && 'main/product-list' === $block['blockName'] ) {
+					// Look through inner blocks for product-item blocks
+					if ( ! empty( $block['innerBlocks'] ) ) {
+						foreach ( $block['innerBlocks'] as $inner_block ) {
+							if ( isset( $inner_block['blockName'] ) && 'main/product-item' === $inner_block['blockName'] ) {
+								// Extract productId from attributes
+								if ( ! empty( $inner_block['attrs']['productId'] ) ) {
+									$product_ids[] = absint( $inner_block['attrs']['productId'] );
+								}
+							}
+						}
+					}
+				}
+				
+				// Recursively check inner blocks
+				if ( ! empty( $block['innerBlocks'] ) ) {
+					$find_product_ids( $block['innerBlocks'] );
+				}
+			}
+		};
+		
+		$find_product_ids( $blocks );
+		$product_ids = array_unique( array_filter( $product_ids ) );
+	}
+}
+
+// Get taxonomy terms only for products in the Product List blocks
+$best_suited_terms = array();
+$features_terms = array();
+$availability_terms = array();
+
+if ( $show_filters && ! empty( $product_ids ) ) {
+	// Get Best Suited For terms used by these products
+	$best_suited_terms = wp_get_object_terms(
+		$product_ids,
+		MAIN_PRODUCTS_BEST_SUITED_TAXONOMY,
 		array(
-			'taxonomy'   => MAIN_PRODUCTS_BEST_SUITED_TAXONOMY,
-			'hide_empty' => true,
-			'orderby'    => 'name',
-			'order'      => 'ASC',
+			'orderby' => 'name',
+			'order'   => 'ASC',
 		)
 	);
 	if ( is_wp_error( $best_suited_terms ) ) {
 		$best_suited_terms = array();
 	}
-}
-
-// Get all Features terms (only if filters are enabled)
-$features_terms = array();
-if ( $show_filters ) {
-	$features_terms = get_terms(
+	
+	// Get Features terms used by these products
+	$features_terms = wp_get_object_terms(
+		$product_ids,
+		MAIN_PRODUCTS_FEATURES_TAXONOMY,
 		array(
-			'taxonomy'   => MAIN_PRODUCTS_FEATURES_TAXONOMY,
-			'hide_empty' => true,
-			'orderby'    => 'name',
-			'order'      => 'ASC',
+			'orderby' => 'name',
+			'order'   => 'ASC',
 		)
 	);
 	if ( is_wp_error( $features_terms ) ) {
 		$features_terms = array();
 	}
-}
-
-// Get all Availability terms (only if filters are enabled)
-$availability_terms = array();
-if ( $show_filters ) {
-	$availability_terms = get_terms(
+	
+	// Get Availability terms used by these products
+	$availability_terms = wp_get_object_terms(
+		$product_ids,
+		MAIN_PRODUCTS_AVAILABILITY_TAXONOMY,
 		array(
-			'taxonomy'   => MAIN_PRODUCTS_AVAILABILITY_TAXONOMY,
-			'hide_empty' => true,
-			'orderby'    => 'name',
-			'order'      => 'ASC',
+			'orderby' => 'name',
+			'order'   => 'ASC',
 		)
 	);
 	if ( is_wp_error( $availability_terms ) ) {

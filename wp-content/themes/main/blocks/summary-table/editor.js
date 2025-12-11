@@ -79,7 +79,6 @@
       var setIsLoadingProducts = isLoadingProductsState[1];
 
       // UI state for collapsible sections
-      // Auto-show search when block is first added (no products yet)
       var showSearchState = useState(products.length === 0);
       var showSearch = showSearchState[0];
       var setShowSearch = showSearchState[1];
@@ -88,7 +87,30 @@
       var searchInputId =
         "summary-table-search-input-" + (props.clientId || "default");
       var searchInputRef = useRef(null);
-      var hasAutoFocusedRef = useRef(false); // Track if we've already auto-focused
+      var hasAutoFocusedRef = useRef(false);
+
+      // ============================================
+      // DRAG AND DROP STATE AND REFS
+      // ============================================
+      var dragState = useState({
+        isDragging: false,
+        dragIndex: null,
+        hoverIndex: null,
+      });
+      var dragInfo = dragState[0];
+      var setDragInfo = dragState[1];
+
+      var productContainerRef = useRef(null);
+      var productItemRefs = useRef([]);
+      var dragRef = useRef({
+        active: false,
+        pointerId: null,
+        startY: 0,
+        dragIndex: null,
+        hoverIndex: null,
+        element: null,
+        visualDragging: false,
+      });
 
       // Auto-show search when products list becomes empty
       useEffect(
@@ -102,9 +124,7 @@
 
       // Function to focus the search input
       var focusSearchInput = function () {
-        // Try multiple strategies to find and focus the input
         var strategies = [
-          // Strategy 1: Use ref if available
           function () {
             if (searchInputRef.current) {
               var input =
@@ -117,7 +137,6 @@
             }
             return null;
           },
-          // Strategy 2: Find by container ID
           function () {
             var container = document.getElementById(searchInputId);
             if (container) {
@@ -129,7 +148,6 @@
             }
             return null;
           },
-          // Strategy 3: Find by placeholder text
           function () {
             var inputs = document.querySelectorAll('input[type="text"]');
             for (var i = 0; i < inputs.length; i++) {
@@ -142,14 +160,11 @@
           },
         ];
 
-        // Try each strategy
         for (var i = 0; i < strategies.length; i++) {
           var input = strategies[i]();
           if (input && input.offsetParent !== null) {
-            // Input is visible
             try {
               input.focus();
-              // Verify focus worked
               if (document.activeElement === input) {
                 return true;
               }
@@ -161,54 +176,40 @@
         return false;
       };
 
-      // Auto-focus search input only once on initial mount (when block is first added)
-      useEffect(
-        function () {
-          // Only auto-focus if:
-          // 1. We haven't auto-focused before
-          // 2. Search is shown
-          // 3. No products are selected (new block)
-          if (
-            !hasAutoFocusedRef.current &&
-            showSearch &&
-            products.length === 0
-          ) {
-            // Use requestAnimationFrame for better timing
-            var frameId = requestAnimationFrame(function () {
-              // Try immediate focus
-              if (focusSearchInput()) {
-                hasAutoFocusedRef.current = true; // Mark as focused
-                return;
+      // Auto-focus search input only once on initial mount
+      useEffect(function () {
+        if (!hasAutoFocusedRef.current && showSearch && products.length === 0) {
+          var frameId = requestAnimationFrame(function () {
+            if (focusSearchInput()) {
+              hasAutoFocusedRef.current = true;
+              return;
+            }
+
+            var attempts = [50, 150, 300, 500, 800];
+            var attemptIndex = 0;
+
+            var tryFocus = function () {
+              if (attemptIndex < attempts.length) {
+                setTimeout(function () {
+                  if (focusSearchInput()) {
+                    hasAutoFocusedRef.current = true;
+                    return;
+                  }
+                  attemptIndex++;
+                  tryFocus();
+                }, attempts[attemptIndex] -
+                  (attemptIndex > 0 ? attempts[attemptIndex - 1] : 0));
               }
-
-              // If immediate focus fails, try with delays
-              var attempts = [50, 150, 300, 500, 800];
-              var attemptIndex = 0;
-
-              var tryFocus = function () {
-                if (attemptIndex < attempts.length) {
-                  setTimeout(function () {
-                    if (focusSearchInput()) {
-                      hasAutoFocusedRef.current = true; // Mark as focused
-                      return; // Success, stop trying
-                    }
-                    attemptIndex++;
-                    tryFocus();
-                  }, attempts[attemptIndex] -
-                    (attemptIndex > 0 ? attempts[attemptIndex - 1] : 0));
-                }
-              };
-
-              tryFocus();
-            });
-
-            return function () {
-              cancelAnimationFrame(frameId);
             };
-          }
-        },
-        [] // Only run once on mount
-      );
+
+            tryFocus();
+          });
+
+          return function () {
+            cancelAnimationFrame(frameId);
+          };
+        }
+      }, []);
 
       var showFieldsState = useState(false);
       var showFields = showFieldsState[0];
@@ -252,26 +253,169 @@
       }
 
       // Initialize columns from selectedFields if columns is empty
-      // Only run on initial mount, not on every selectedFields change
+      useEffect(function () {
+        if (columns.length === 0 && selectedFields.length > 0) {
+          var newColumns = selectedFields.map(function (field) {
+            var fieldOption = FIELD_OPTIONS.find(function (opt) {
+              return opt.value === field;
+            });
+            return {
+              type: "field",
+              field: field,
+              label: fieldOption ? fieldOption.label : field,
+              width: getDefaultColumnWidth(field),
+            };
+          });
+          setAttributes({ columns: newColumns });
+        }
+      }, []);
+
+      // Keep productItemRefs in sync with products length
       useEffect(
         function () {
-          if (columns.length === 0 && selectedFields.length > 0) {
-            var newColumns = selectedFields.map(function (field) {
-              var fieldOption = FIELD_OPTIONS.find(function (opt) {
-                return opt.value === field;
-              });
-              return {
-                type: "field",
-                field: field,
-                label: fieldOption ? fieldOption.label : field,
-                width: getDefaultColumnWidth(field),
-              };
-            });
-            setAttributes({ columns: newColumns });
-          }
+          productItemRefs.current = productItemRefs.current.slice(
+            0,
+            products.length
+          );
         },
-        [] // Only run once on mount
+        [products.length]
       );
+
+      // ============================================
+      // DRAG AND DROP FUNCTIONS
+      // ============================================
+
+      var findHoverIndex = function (mouseY) {
+        var items = productItemRefs.current;
+        for (var i = 0; i < items.length; i++) {
+          var item = items[i];
+          if (!item) continue;
+          var rect = item.getBoundingClientRect();
+          var midY = rect.top + rect.height / 2;
+          if (mouseY < midY) {
+            return i;
+          }
+        }
+        return items.length - 1;
+      };
+
+      var handlePointerDown = function (e, index) {
+        if (e.button !== 0) return;
+        if (e.target.closest("button")) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        e.target.setPointerCapture(e.pointerId);
+
+        dragRef.current = {
+          active: true,
+          pointerId: e.pointerId,
+          startY: e.clientY,
+          dragIndex: index,
+          hoverIndex: index,
+          element: e.target,
+          visualDragging: false,
+        };
+
+        setDragInfo({
+          isDragging: true,
+          dragIndex: index,
+          hoverIndex: index,
+        });
+
+        document.body.style.cursor = "grabbing";
+        document.body.style.userSelect = "none";
+      };
+
+      var handlePointerMove = function (e) {
+        var data = dragRef.current;
+        if (!data.active) return;
+
+        var deltaY = Math.abs(e.clientY - data.startY);
+
+        if (!data.visualDragging && deltaY > 5) {
+          data.visualDragging = true;
+        }
+
+        var newHoverIndex = findHoverIndex(e.clientY);
+        if (data.hoverIndex !== newHoverIndex) {
+          data.hoverIndex = newHoverIndex;
+          setDragInfo({
+            isDragging: true,
+            dragIndex: data.dragIndex,
+            hoverIndex: newHoverIndex,
+          });
+        }
+      };
+
+      var handlePointerUp = function (e) {
+        var data = dragRef.current;
+
+        if (!data.active) return;
+
+        if (data.element && data.pointerId !== null) {
+          try {
+            data.element.releasePointerCapture(data.pointerId);
+          } catch (err) {}
+        }
+
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+
+        // Only perform move if user actually dragged
+        if (data.visualDragging && data.dragIndex !== null) {
+          var finalHoverIndex = findHoverIndex(e.clientY);
+
+          if (finalHoverIndex !== data.dragIndex) {
+            // Reorder products array
+            var newProducts = products.slice();
+            var movedProduct = newProducts.splice(data.dragIndex, 1)[0];
+            newProducts.splice(finalHoverIndex, 0, movedProduct);
+            setAttributes({ products: newProducts });
+          }
+        }
+
+        dragRef.current = {
+          active: false,
+          pointerId: null,
+          startY: 0,
+          dragIndex: null,
+          hoverIndex: null,
+          element: null,
+          visualDragging: false,
+        };
+
+        setDragInfo({
+          isDragging: false,
+          dragIndex: null,
+          hoverIndex: null,
+        });
+      };
+
+      var handlePointerCancel = function (e) {
+        handlePointerUp(e);
+      };
+
+      // Move product up
+      var handleMoveUp = function (index) {
+        if (index === 0) return;
+        var newProducts = products.slice();
+        var temp = newProducts[index];
+        newProducts[index] = newProducts[index - 1];
+        newProducts[index - 1] = temp;
+        setAttributes({ products: newProducts });
+      };
+
+      // Move product down
+      var handleMoveDown = function (index) {
+        if (index === products.length - 1) return;
+        var newProducts = products.slice();
+        var temp = newProducts[index];
+        newProducts[index] = newProducts[index + 1];
+        newProducts[index + 1] = temp;
+        setAttributes({ products: newProducts });
+      };
 
       // Search products function
       function searchProducts(term) {
@@ -306,12 +450,10 @@
         });
 
         if (!exists) {
-          // Initialize custom column values for this product
           var customColumnValues = {};
           columns.forEach(function (col) {
             if (col.type === "custom" && col.id) {
               customColumnValues[col.id] = "";
-              // Also update the column's values object
               if (!col.values) {
                 col.values = {};
               }
@@ -325,7 +467,6 @@
             customValues: customColumnValues,
           });
 
-          // Update columns to include this product in their values
           var newColumns = columns.map(function (col) {
             if (col.type === "custom" && col.id) {
               var newCol = Object.assign({}, col);
@@ -385,7 +526,6 @@
                 product.id &&
                 existingIds.indexOf(product.id) === -1
               ) {
-                // Initialize custom column values for this product
                 var customColumnValues = {};
                 columns.forEach(function (col) {
                   if (col.type === "custom" && col.id) {
@@ -403,7 +543,6 @@
               }
             });
 
-            // Update columns to include new products in their values
             var newColumns = columns.map(function (col) {
               if (col.type === "custom" && col.id) {
                 var newCol = Object.assign({}, col);
@@ -447,11 +586,8 @@
         var index = newSelectedFields.indexOf(fieldValue);
 
         if (index > -1) {
-          // Unchecking - remove from selectedFields and columns
           newSelectedFields.splice(index, 1);
-          // Remove from columns too - make sure we remove ALL instances of this field
           var newColumns = columns.filter(function (col) {
-            // Keep custom columns and field columns that don't match this field
             return col.type !== "field" || col.field !== fieldValue;
           });
           setAttributes({
@@ -459,14 +595,11 @@
             columns: newColumns,
           });
         } else {
-          // Checking - add to selectedFields and columns (only if not already exists)
-          // First check if column already exists in columns array
           var columnExists = columns.some(function (col) {
             return col.type === "field" && col.field === fieldValue;
           });
 
           if (!columnExists) {
-            // Column doesn't exist, add it
             newSelectedFields.push(fieldValue);
             var fieldOption = FIELD_OPTIONS.find(function (opt) {
               return opt.value === fieldValue;
@@ -483,8 +616,6 @@
               columns: newColumns,
             });
           } else {
-            // Column already exists in columns but not in selectedFields
-            // This shouldn't happen, but sync it anyway
             newSelectedFields.push(fieldValue);
             setAttributes({
               selectedFields: newSelectedFields,
@@ -499,7 +630,6 @@
         var newColumns = columns.slice();
         var initialValues = {};
 
-        // Initialize values for all products
         products.forEach(function (product) {
           initialValues[product.id] = "";
         });
@@ -512,7 +642,6 @@
           width: "120px",
         });
 
-        // Also initialize values in products if they don't exist
         var newProducts = products.map(function (product) {
           var newProduct = Object.assign({}, product);
           if (!newProduct.customValues) {
@@ -546,7 +675,6 @@
           return col;
         });
 
-        // Also update in products
         var newProducts = products.map(function (product) {
           if (product.id === productId) {
             var newProduct = Object.assign({}, product);
@@ -582,20 +710,16 @@
         if (!newColumns[index]) {
           return;
         }
-        // Remove width if empty, otherwise set it
         if (!width || width.trim() === "") {
           delete newColumns[index].width;
         } else {
           var widthValue = width.trim();
-          // Remove any existing "px" suffix to normalize
           widthValue = widthValue.replace(/px$/i, "");
 
-          // If it's a valid number (integer or decimal), add px
           if (/^\d+(\.\d+)?$/.test(widthValue)) {
             widthValue = widthValue + "px";
             newColumns[index].width = widthValue;
           } else {
-            // Invalid format, don't update
             return;
           }
         }
@@ -609,7 +733,6 @@
         newColumns.splice(index, 1);
 
         if (removedColumn && removedColumn.type === "field") {
-          // Remove from selectedFields too - remove ALL instances
           var newSelectedFields = selectedFields.filter(function (field) {
             return field !== removedColumn.field;
           });
@@ -618,7 +741,6 @@
             selectedFields: newSelectedFields,
           });
         } else {
-          // For custom columns, just remove the column
           setAttributes({
             columns: newColumns,
           });
@@ -628,7 +750,7 @@
       // Move column up
       function moveColumnUp(index) {
         if (index === 0) {
-          return; // Already at the top
+          return;
         }
         var newColumns = columns.slice();
         var temp = newColumns[index];
@@ -640,19 +762,13 @@
       // Move column down
       function moveColumnDown(index) {
         if (index === columns.length - 1) {
-          return; // Already at the bottom
+          return;
         }
         var newColumns = columns.slice();
         var temp = newColumns[index];
         newColumns[index] = newColumns[index + 1];
         newColumns[index + 1] = temp;
         setAttributes({ columns: newColumns });
-      }
-
-      // Add column (insert after index)
-      function addColumnAfter(index) {
-        // This will be handled by selecting a new field
-        // For now, we'll just show a message or allow reordering
       }
 
       // Update last column config
@@ -722,7 +838,6 @@
                 el(
                   "tr",
                   {},
-                  // First column - Product (fixed)
                   el(
                     "th",
                     {
@@ -732,7 +847,6 @@
                     },
                     "Product"
                   ),
-                  // Dynamic columns
                   columns.map(function (column, colIndex) {
                     var columnWidth = column.width || "auto";
                     var widthStyle = {};
@@ -863,7 +977,6 @@
                       )
                     );
                   }),
-                  // Last column - Action (fixed)
                   el(
                     "th",
                     {
@@ -882,7 +995,6 @@
                   return el(
                     "tr",
                     { key: product.id },
-                    // First column - Product
                     el(
                       "td",
                       {
@@ -901,18 +1013,15 @@
                         )
                       )
                     ),
-                    // Dynamic columns
                     columns.map(function (column) {
                       var displayValue = "";
                       if (column.type === "custom") {
-                        // Get custom column value for this product
                         displayValue =
                           (product.customValues &&
                             product.customValues[column.id]) ||
                           (column.values && column.values[product.id]) ||
                           "";
                       } else {
-                        // Field-based column - show placeholder
                         displayValue = "[" + column.label + "]";
                       }
 
@@ -965,7 +1074,6 @@
                             )
                       );
                     }),
-                    // Last column - Action
                     el(
                       "td",
                       {
@@ -1007,7 +1115,6 @@
         el(
           InspectorControls,
           {},
-          // Field Selection in Sidebar
           el(
             PanelBody,
             {
@@ -1075,7 +1182,6 @@
                     return col.type !== "custom";
                   })
                   .map(function (column, index) {
-                    // Find actual index in full columns array
                     var actualIndex = columns.findIndex(function (c) {
                       return c.type === "field" && c.field === column.field;
                     });
@@ -1115,7 +1221,6 @@
                   })
               )
           ),
-          // Custom Columns in Sidebar
           el(
             PanelBody,
             {
@@ -1151,7 +1256,6 @@
                 return col.type === "custom";
               })
               .map(function (column, colIndex) {
-                // Find the actual index in the full columns array
                 var actualIndex = columns.findIndex(function (c) {
                   return c.type === "custom" && c.id === column.id;
                 });
@@ -1219,7 +1323,6 @@
                 __("No custom columns yet. Click above to add one.", "main")
               )
           ),
-          // Last Column Configuration in Sidebar
           el(
             PanelBody,
             {
@@ -1263,7 +1366,7 @@
               })
           )
         ),
-        // Main Content Area - Product Search and Table Preview
+        // Main Content Area
         el(
           "div",
           {
@@ -1290,7 +1393,6 @@
                 id: searchInputId,
                 ref: function (element) {
                   searchInputRef.current = element;
-                  // Try to focus immediately when element is available, but only once
                   if (
                     element &&
                     showSearch &&
@@ -1306,7 +1408,7 @@
                         );
                       if (input && document.activeElement !== input) {
                         input.focus();
-                        hasAutoFocusedRef.current = true; // Mark as focused
+                        hasAutoFocusedRef.current = true;
                       }
                     }, 50);
                   }
@@ -1460,10 +1562,15 @@
                   },
                   __("Type at least 2 characters to search", "main")
                 ),
+
+              // ============================================
+              // DRAGGABLE PRODUCTS LIST
+              // ============================================
               products.length > 0 &&
                 el(
                   "div",
                   {
+                    ref: productContainerRef,
                     style: {
                       marginTop: "16px",
                       paddingTop: "16px",
@@ -1477,42 +1584,163 @@
                         fontSize: "13px",
                         fontWeight: "600",
                         color: "#374151",
-                        marginBottom: "12px",
+                        marginBottom: "8px",
                       },
                     },
                     __("Selected Products:", "main") + " " + products.length
                   ),
-                  products.map(function (product, index) {
-                    return el(
-                      "div",
-                      {
-                        key: product.id,
-                        style: {
-                          padding: "8px",
-                          background: "#fff",
-                          borderRadius: "4px",
-                          marginBottom: "6px",
-                          border: "1px solid #e5e7eb",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          fontSize: "13px",
-                        },
+                  el(
+                    "div",
+                    {
+                      style: {
+                        fontSize: "12px",
+                        color: "#757575",
+                        marginBottom: "12px",
+                        fontStyle: "italic",
                       },
-                      el("span", {}, product.name),
-                      el(
-                        Button,
+                    },
+                    __("Drag items to reorder, or use arrow buttons", "main")
+                  ),
+                  el(
+                    "div",
+                    {
+                      className: "product-sort-container",
+                      style: {
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                      },
+                    },
+                    products.map(function (product, index) {
+                      var isDragging =
+                        dragInfo.isDragging && dragInfo.dragIndex === index;
+                      var isHoverTarget =
+                        dragInfo.isDragging &&
+                        dragInfo.hoverIndex === index &&
+                        dragInfo.dragIndex !== index;
+
+                      return el(
+                        "div",
                         {
-                          isSmall: true,
-                          isDestructive: true,
-                          onClick: function () {
-                            removeProduct(index);
+                          key: product.id,
+                          ref: function (element) {
+                            productItemRefs.current[index] = element;
+                          },
+                          onPointerDown: function (e) {
+                            handlePointerDown(e, index);
+                          },
+                          onPointerMove: handlePointerMove,
+                          onPointerUp: handlePointerUp,
+                          onPointerCancel: handlePointerCancel,
+                          style: {
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: "8px 12px",
+                            backgroundColor: isHoverTarget
+                              ? "#dbeafe"
+                              : isDragging
+                              ? "#fef3c7"
+                              : "#fff",
+                            borderRadius: "4px",
+                            fontSize: "13px",
+                            cursor: dragInfo.isDragging ? "grabbing" : "grab",
+                            opacity: isDragging ? 0.8 : 1,
+                            userSelect: "none",
+                            border: isHoverTarget
+                              ? "2px dashed #3b82f6"
+                              : isDragging
+                              ? "2px solid #f59e0b"
+                              : "1px solid #e5e7eb",
+                            transition:
+                              "background-color 0.1s, border-color 0.1s",
+                            boxSizing: "border-box",
+                            position: "relative",
+                            touchAction: "none",
                           },
                         },
-                        __("Remove", "main")
-                      )
-                    );
-                  })
+                        el(
+                          "span",
+                          {
+                            style: {
+                              marginRight: "8px",
+                              cursor: dragInfo.isDragging ? "grabbing" : "grab",
+                              fontSize: "16px",
+                              color: "#757575",
+                              userSelect: "none",
+                              padding: "0 4px",
+                            },
+                          },
+                          "⋮⋮"
+                        ),
+                        el(
+                          "span",
+                          {
+                            style: {
+                              flex: 1,
+                              pointerEvents: "none",
+                              userSelect: "none",
+                            },
+                          },
+                          "#" + (index + 1) + " - " + product.name
+                        ),
+                        el(
+                          "div",
+                          {
+                            onPointerDown: function (e) {
+                              e.stopPropagation();
+                            },
+                            style: {
+                              display: "flex",
+                              gap: "4px",
+                              alignItems: "center",
+                            },
+                          },
+                          el(Button, {
+                            icon: "arrow-up-alt2",
+                            isSmall: true,
+                            disabled: index === 0,
+                            onClick: function (e) {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              handleMoveUp(index);
+                            },
+                            label: __("Move Up", "main"),
+                            style: {
+                              minWidth: "30px",
+                            },
+                          }),
+                          el(Button, {
+                            icon: "arrow-down-alt2",
+                            isSmall: true,
+                            disabled: index === products.length - 1,
+                            onClick: function (e) {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              handleMoveDown(index);
+                            },
+                            label: __("Move Down", "main"),
+                            style: {
+                              minWidth: "30px",
+                            },
+                          }),
+                          el(
+                            Button,
+                            {
+                              isDestructive: true,
+                              isSmall: true,
+                              onClick: function (e) {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                removeProduct(index);
+                              },
+                            },
+                            __("Remove", "main")
+                          )
+                        )
+                      );
+                    })
+                  )
                 )
             )
           ),

@@ -11,7 +11,12 @@
   "editorStyle": "file:./editor.css",
   "style": "file:./style.css",
   "render": "file:./render.php",
-  "attributes": {},
+  "attributes": {
+    "showProductNumber": {
+      "type": "boolean",
+      "default": true
+    }
+  },
   "supports": {
     "html": false,
     "align": ["wide", "full"]

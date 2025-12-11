@@ -92,10 +92,20 @@
             return innerBlock.clientId === clientId;
           });
 
+          // Get parent block's showProductNumber attribute
+          var showProductNumber = true; // Default to true
+          if (parentBlock && parentBlock.attributes) {
+            showProductNumber =
+              parentBlock.attributes.showProductNumber !== undefined
+                ? parentBlock.attributes.showProductNumber
+                : true;
+          }
+
           return {
             blocks: productItemBlocks,
             productIds: productIds,
             blockIndex: index >= 0 ? index + 1 : 1,
+            showProductNumber: showProductNumber,
           };
         },
         [clientId]
@@ -103,6 +113,10 @@
 
       var blockIndex = siblingProducts.blockIndex || 1;
       var existingProductIds = siblingProducts.productIds || [];
+      var showProductNumber =
+        siblingProducts.showProductNumber !== undefined
+          ? siblingProducts.showProductNumber
+          : true;
 
       // CORRECTED: Properly destructure useState
       var searchState = useState("");
@@ -348,6 +362,37 @@
                     scoreBreakdown = [];
                   }
 
+                  // Get availability flags from taxonomy (via custom REST field)
+                  var availabilityData =
+                    post.product_availability_data &&
+                    Array.isArray(post.product_availability_data)
+                      ? post.product_availability_data
+                      : [];
+
+                  // Map availability term names to badge flags
+                  var availabilityFlags = {
+                    ai_powered: false,
+                    open_source: false,
+                    has_free_plan: false,
+                    has_free_trial: false,
+                    has_demo: false,
+                  };
+
+                  availabilityData.forEach(function (term) {
+                    var termName = term.name || "";
+                    if (termName === "AI-Powered") {
+                      availabilityFlags.ai_powered = true;
+                    } else if (termName === "Open Source") {
+                      availabilityFlags.open_source = true;
+                    } else if (termName === "Has Free Plan") {
+                      availabilityFlags.has_free_plan = true;
+                    } else if (termName === "Has Free Trial") {
+                      availabilityFlags.has_free_trial = true;
+                    } else if (termName === "Has Demo") {
+                      availabilityFlags.has_demo = true;
+                    }
+                  });
+
                   var productDataObj = {
                     id: post.id,
                     name: productName || postTitle,
@@ -357,11 +402,11 @@
                     logo_attachment_id: logoId,
                     website_url: websiteUrl,
                     permalink: postLink,
-                    ai_powered: !!(meta && meta.ai_powered),
-                    open_source: !!(meta && meta.open_source),
-                    has_free_plan: !!(meta && meta.has_free_plan),
-                    has_free_trial: !!(meta && meta.has_free_trial),
-                    has_demo: !!(meta && meta.has_demo),
+                    ai_powered: availabilityFlags.ai_powered,
+                    open_source: availabilityFlags.open_source,
+                    has_free_plan: availabilityFlags.has_free_plan,
+                    has_free_trial: availabilityFlags.has_free_trial,
+                    has_demo: availabilityFlags.has_demo,
                     update_logs: updateLogs,
                     score_breakdown: scoreBreakdownJson, // Store as JSON string for auto-loading
                     product_features: [], // Will be populated from taxonomy
@@ -518,12 +563,8 @@
           }, [])
         : null;
 
-      // Track if we've already auto-loaded blocks for this product
-      var hasAutoLoadedState = useState(false);
-      var hasAutoLoaded = hasAutoLoadedState[0];
-      var setHasAutoLoaded = hasAutoLoadedState[1];
-
       // Auto-load sub-blocks when product is selected and product data is loaded
+      // DISABLED: Auto-load feature is disabled
       useEffect(
         function () {
           // Only proceed if we have a product ID, product data is loaded, and we haven't already loaded blocks
@@ -536,8 +577,8 @@
             return;
           }
 
-          // Skip if we've already loaded blocks for this product
-          if (hasAutoLoaded) {
+          // Skip if we've already loaded blocks for this product (using persistent attribute)
+          if (attributes.hasAutoLoadedBlocks) {
             return;
           }
 
@@ -564,7 +605,10 @@
 
           // If all blocks already exist, mark as loaded and return
           if (!needsScoreBreakdown && !needsKeyFeatures && !needsProsCons) {
-            setHasAutoLoaded(true);
+            setAttributes({
+              hasAutoLoadedBlocks: true,
+              autoLoadedForProductId: productId,
+            });
             return;
           }
 
@@ -607,9 +651,7 @@
                 "",
               ]);
             }
-            blocksToInsert.push(
-              wp.blocks.createBlock("main/key-features", keyFeaturesAttrs)
-            );
+            blocksToInsert.push(wp.blocks.createBlock("main/key-features"));
           }
 
           // 3. Pros & Cons (empty) - always add if it doesn't exist
@@ -624,14 +666,20 @@
               try {
                 // Verify wp.blocks is available
                 if (!wp || !wp.blocks || !wp.blocks.createBlock) {
-                  setHasAutoLoaded(true);
+                  setAttributes({
+                    hasAutoLoadedBlocks: true,
+                    autoLoadedForProductId: productId,
+                  });
                   return;
                 }
 
                 // Get current block again to ensure we have the latest state
                 var latestBlock = getBlock(clientId);
                 if (!latestBlock) {
-                  setHasAutoLoaded(true);
+                  setAttributes({
+                    hasAutoLoadedBlocks: true,
+                    autoLoadedForProductId: productId,
+                  });
                   return;
                 }
 
@@ -666,31 +714,49 @@
                   insertBlocks(finalBlocksToInsert, 0, clientId);
                 }
 
-                setHasAutoLoaded(true);
+                setAttributes({
+                  hasAutoLoadedBlocks: true,
+                  autoLoadedForProductId: productId,
+                });
               } catch (e) {
                 // Still mark as loaded to prevent infinite retries
-                setHasAutoLoaded(true);
+                setAttributes({
+                  hasAutoLoadedBlocks: true,
+                  autoLoadedForProductId: productId,
+                });
               }
             }, 1000);
           } else {
-            setHasAutoLoaded(true);
+            setAttributes({
+              hasAutoLoadedBlocks: true,
+              autoLoadedForProductId: productId,
+            });
           }
         },
         [
           productId,
           productData,
           clientId,
-          hasAutoLoaded,
+          attributes.hasAutoLoadedBlocks,
           insertBlocks,
           getBlock,
         ]
       );
 
-      // Reset auto-loaded flag when product changes
+      // Reset auto-loaded flag when product changes to a different product
       useEffect(
         function () {
-          if (productId) {
-            setHasAutoLoaded(false);
+          // Only reset if the product ID has changed to a different product
+          if (
+            productId &&
+            attributes.hasAutoLoadedBlocks &&
+            attributes.autoLoadedForProductId !== productId
+          ) {
+            // Allow the auto-load to run again for the new product
+            setAttributes({
+              hasAutoLoadedBlocks: false,
+              autoLoadedForProductId: 0,
+            });
           }
         },
         [productId]
@@ -1003,21 +1069,22 @@
               )
             )
         ),
-        // Product Number
-        el(
-          "div",
-          {
-            className:
-              "product-number " + (attributes.isHighlighted ? "active" : ""),
-            "aria-label":
-              "Rank " + (attributes.productNumber || blockIndex || 1),
-          },
+        // Product Number (only show if parent allows it)
+        showProductNumber &&
           el(
-            "span",
-            { "aria-hidden": "true" },
-            attributes.productNumber || blockIndex || 1
-          )
-        ),
+            "div",
+            {
+              className:
+                "product-number " + (attributes.isHighlighted ? "active" : ""),
+              "aria-label":
+                "Rank " + (attributes.productNumber || blockIndex || 1),
+            },
+            el(
+              "span",
+              { "aria-hidden": "true" },
+              attributes.productNumber || blockIndex || 1
+            )
+          ),
 
         // Main content wrapper with padding
         el(

@@ -13,6 +13,7 @@ define( 'MAIN_PRODUCTS_CPT', 'products' );
 define( 'MAIN_PRODUCTS_TAXONOMY', 'product-category' );
 define( 'MAIN_PRODUCTS_FEATURES_TAXONOMY', 'product-features' );
 define( 'MAIN_PRODUCTS_BEST_SUITED_TAXONOMY', 'product-best-suited-for' );
+define( 'MAIN_PRODUCTS_AVAILABILITY_TAXONOMY', 'product-availability' );
 
 /**
  * Register the Products custom post type.
@@ -194,6 +195,39 @@ function main_register_product_best_suited_taxonomy() {
 }
 add_action( 'init', 'main_register_product_best_suited_taxonomy' );
 
+/**
+ * Register Availability taxonomy for products.
+ */
+function main_register_product_availability_taxonomy() {
+	$labels = array(
+		'name'              => _x( 'Availability Flags', 'taxonomy general name', 'main' ),
+		'singular_name'     => _x( 'Availability Flag', 'taxonomy singular name', 'main' ),
+		'search_items'      => __( 'Search Availability Flags', 'main' ),
+		'all_items'         => __( 'All Availability Flags', 'main' ),
+		'edit_item'         => __( 'Edit Availability Flag', 'main' ),
+		'update_item'       => __( 'Update Availability Flag', 'main' ),
+		'add_new_item'      => __( 'Add New Availability Flag', 'main' ),
+		'new_item_name'     => __( 'New Availability Flag Name', 'main' ),
+		'menu_name'         => __( 'Availability Flags', 'main' ),
+		'not_found'         => __( 'No availability flags found', 'main' ),
+	);
+
+	$args = array(
+		'hierarchical'      => false,
+		'labels'            => $labels,
+		'show_ui'           => true,
+		'show_in_rest'      => true,
+		'show_admin_column' => true,
+		'query_var'         => true,
+		'rewrite'           => array(
+			'slug' => 'guides/product-availability',
+		),
+	);
+
+	register_taxonomy( MAIN_PRODUCTS_AVAILABILITY_TAXONOMY, array( MAIN_PRODUCTS_CPT ), $args );
+}
+add_action( 'init', 'main_register_product_availability_taxonomy' );
+
 
 /**
  * Product awards configuration.
@@ -286,37 +320,12 @@ function main_get_product_meta_fields() {
 			'sanitize' => 'main_sanitize_product_rating',
 			'default'  => '',
 		),
-		'rating_count'   => array(
-			'type'     => 'number',
-			'sanitize' => 'absint',
-			'default'  => 0,
-		),
-		'has_free_trial' => array(
-			'type'     => 'boolean',
-			'sanitize' => 'main_sanitize_product_boolean',
-			'default'  => false,
-		),
-		'has_free_plan'  => array(
-			'type'     => 'boolean',
-			'sanitize' => 'main_sanitize_product_boolean',
-			'default'  => false,
-		),
-		'has_demo'       => array(
-			'type'     => 'boolean',
-			'sanitize' => 'main_sanitize_product_boolean',
-			'default'  => false,
-		),
-		'open_source'    => array(
-			'type'     => 'boolean',
-			'sanitize' => 'main_sanitize_product_boolean',
-			'default'  => false,
-		),
-		'ai_powered'     => array(
-			'type'     => 'boolean',
-			'sanitize' => 'main_sanitize_product_boolean',
-			'default'  => false,
-		),
-		'award'          => array(
+	'rating_count'   => array(
+		'type'     => 'number',
+		'sanitize' => 'absint',
+		'default'  => 1,
+	),
+	'award'          => array(
 			'type'     => 'string',
 			'sanitize' => 'sanitize_text_field',
 			'default'  => '',
@@ -585,6 +594,7 @@ function main_remove_product_taxonomy_meta_boxes() {
 	remove_meta_box( MAIN_PRODUCTS_FEATURES_TAXONOMY . 'div', MAIN_PRODUCTS_CPT, 'side' );
 	// Non-hierarchical taxonomies use tagsdiv-{taxonomy}
 	remove_meta_box( 'tagsdiv-' . MAIN_PRODUCTS_BEST_SUITED_TAXONOMY, MAIN_PRODUCTS_CPT, 'side' );
+	remove_meta_box( 'tagsdiv-' . MAIN_PRODUCTS_AVAILABILITY_TAXONOMY, MAIN_PRODUCTS_CPT, 'side' );
 }
 // Use add_meta_boxes hook with high priority to ensure it runs after WordPress registers default meta boxes
 add_action( 'add_meta_boxes', 'main_remove_product_taxonomy_meta_boxes', 999 );
@@ -839,25 +849,37 @@ function main_render_product_best_suited_meta_box( $post ) {
  * @param WP_Post $post Current post object.
  */
 function main_render_product_availability_flags_meta_box( $post ) {
-	wp_nonce_field( 'main_products_meta', 'main_products_meta_nonce' );
+	$taxonomy = MAIN_PRODUCTS_AVAILABILITY_TAXONOMY;
+	$terms    = get_terms(
+		array(
+			'taxonomy'   => $taxonomy,
+			'hide_empty' => false,
+		)
+	);
+	$selected = wp_get_post_terms( $post->ID, $taxonomy, array( 'fields' => 'names' ) );
 	?>
-	<div class="main-product-meta__toggles">
-		<?php
-		$checkboxes = array(
-			'has_free_trial' => __( 'Has Free Trial', 'main' ),
-			'has_free_plan'  => __( 'Has Free Plan', 'main' ),
-			'has_demo'       => __( 'Has Demo', 'main' ),
-			'open_source'    => __( 'Open Source', 'main' ),
-			'ai_powered'     => __( 'AI-Powered', 'main' ),
-		);
-		foreach ( $checkboxes as $key => $label ) :
-			$checked = main_get_product_meta_value( $post->ID, $key );
+	<div class="main-product-taxonomy-meta">
+		<?php if ( ! empty( $terms ) && ! is_wp_error( $terms ) ) : ?>
+			<div class="main-product-taxonomy-checklist">
+				<?php
+				// For non-hierarchical taxonomies, WordPress expects term names, not IDs
+				foreach ( $terms as $term ) :
+					$checked = in_array( $term->name, $selected, true ) ? 'checked="checked"' : '';
+					?>
+					<label class="main-product-taxonomy-checkbox" style="display: block; margin-bottom: 8px;">
+						<input type="checkbox" name="tax_input[<?php echo esc_attr( $taxonomy ); ?>][]" value="<?php echo esc_attr( $term->name ); ?>" <?php echo $checked; ?>>
+						<?php echo esc_html( $term->name ); ?>
+					</label>
+				<?php endforeach; ?>
+			</div>
+			<?php
+			// Add a hidden input to ensure the taxonomy is always present in POST data
+			// This allows WordPress to process empty selections (clearing all terms)
 			?>
-			<label class="main-product-meta__checkbox" style="display: block; margin-bottom: 8px;">
-				<input type="checkbox" name="<?php echo esc_attr( $key ); ?>" value="1" <?php checked( $checked, true ); ?> >
-				<?php echo esc_html( $label ); ?>
-			</label>
-		<?php endforeach; ?>
+			<input type="hidden" name="tax_input[<?php echo esc_attr( $taxonomy ); ?>][]" value="">
+		<?php else : ?>
+			<p><?php esc_html_e( 'No availability flags available. Please add flags first from Products > Availability Flags.', 'main' ); ?></p>
+		<?php endif; ?>
 	</div>
 	<?php
 }
@@ -1092,7 +1114,7 @@ function main_render_product_details_meta_box( $post ) {
 						step="1"
 						id="main-product-rating-count" 
 						name="rating_count" 
-						value="<?php echo esc_attr( main_get_product_meta_value( $post->ID, 'rating_count', 0 ) ); ?>" 
+						value="<?php echo esc_attr( main_get_product_meta_value( $post->ID, 'rating_count', 1 ) ); ?>" 
 						class="small-text"
 				>
 				<p class="description">
@@ -1176,6 +1198,29 @@ function main_save_product_meta( $post_id, $post ) {
 			// WordPress will handle the term assignment normally
 			// We just ensure empty values are filtered out
 			$_POST['tax_input'][ $best_suited_taxonomy ] = array_values( $submitted_terms );
+		}
+	} else {
+		// If tax_input is not present at all, it means no checkboxes were rendered
+		// In this case, we don't modify the existing terms
+	}
+
+	// Handle Availability taxonomy - ensure empty selections are saved (clear all terms)
+	$availability_taxonomy = MAIN_PRODUCTS_AVAILABILITY_TAXONOMY;
+	if ( isset( $_POST['tax_input'][ $availability_taxonomy ] ) ) {
+		$submitted_terms = $_POST['tax_input'][ $availability_taxonomy ];
+		
+		// Filter out empty values from the array
+		$submitted_terms = array_filter( (array) $submitted_terms, function( $term ) {
+			return ! empty( $term );
+		} );
+		
+		// If array is empty or only contains empty strings, clear all terms
+		if ( empty( $submitted_terms ) ) {
+			wp_set_post_terms( $post_id, array(), $availability_taxonomy, false );
+		} else {
+			// WordPress will handle the term assignment normally
+			// We just ensure empty values are filtered out
+			$_POST['tax_input'][ $availability_taxonomy ] = array_values( $submitted_terms );
 		}
 	} else {
 		// If tax_input is not present at all, it means no checkboxes were rendered
@@ -1424,6 +1469,47 @@ function main_register_product_features_rest_field() {
 add_action( 'rest_api_init', 'main_register_product_features_rest_field' );
 
 /**
+ * Register REST field to include product availability flags in product REST response.
+ */
+function main_register_product_availability_rest_field() {
+	register_rest_field(
+		MAIN_PRODUCTS_CPT,
+		'product_availability_data',
+		array(
+			'get_callback' => function ( $post ) {
+				$terms = wp_get_post_terms( $post['id'], MAIN_PRODUCTS_AVAILABILITY_TAXONOMY );
+				if ( is_wp_error( $terms ) || empty( $terms ) ) {
+					return array();
+				}
+				return array_map(
+					function ( $term ) {
+						return array(
+							'id'   => $term->term_id,
+							'name' => $term->name,
+							'slug' => $term->slug,
+						);
+					},
+					$terms
+				);
+			},
+			'schema'       => array(
+				'description' => __( 'Product availability flags taxonomy terms', 'main' ),
+				'type'        => 'array',
+				'items'       => array(
+					'type'       => 'object',
+					'properties' => array(
+						'id'   => array( 'type' => 'integer' ),
+						'name' => array( 'type' => 'string' ),
+						'slug' => array( 'type' => 'string' ),
+					),
+				),
+			),
+		)
+	);
+}
+add_action( 'rest_api_init', 'main_register_product_availability_rest_field' );
+
+/**
  * AJAX handler to fetch product logo via favicon service.
  */
 function main_fetch_product_logo() {
@@ -1666,3 +1752,109 @@ function main_extract_pricing_value( $pricing_summary ) {
 
 	return null;
 }
+
+/**
+ * Create default availability flag terms if they don't exist.
+ * Runs only once to prevent recreating deleted terms.
+ */
+function main_create_default_availability_flags() {
+	// Check if default flags have already been created
+	$flags_created = get_option( 'main_availability_flags_created', false );
+	if ( $flags_created ) {
+		return;
+	}
+	
+	$taxonomy = MAIN_PRODUCTS_AVAILABILITY_TAXONOMY;
+	
+	// Check if taxonomy exists
+	if ( ! taxonomy_exists( $taxonomy ) ) {
+		return;
+	}
+	
+	// Default availability flags
+	$default_flags = array(
+		'Has Free Trial',
+		'Has Free Plan',
+		'Has Demo',
+		'Open Source',
+		'AI-Powered',
+	);
+	
+	foreach ( $default_flags as $flag ) {
+		// Check if term already exists
+		if ( ! term_exists( $flag, $taxonomy ) ) {
+			wp_insert_term( $flag, $taxonomy );
+		}
+	}
+	
+	// Mark as created so it doesn't run again
+	update_option( 'main_availability_flags_created', true );
+}
+add_action( 'init', 'main_create_default_availability_flags', 20 );
+
+/**
+ * Migrate existing availability flag meta fields to taxonomy.
+ * This function runs once to migrate old data to the new taxonomy structure.
+ */
+function main_migrate_availability_flags_to_taxonomy() {
+	// Check if migration has already been run
+	$migration_done = get_option( 'main_availability_flags_migrated', false );
+	if ( $migration_done ) {
+		return;
+	}
+	
+	$taxonomy = MAIN_PRODUCTS_AVAILABILITY_TAXONOMY;
+	
+	// Check if taxonomy exists
+	if ( ! taxonomy_exists( $taxonomy ) ) {
+		return;
+	}
+	
+	// Get all products
+	$products = get_posts(
+		array(
+			'post_type'      => MAIN_PRODUCTS_CPT,
+			'posts_per_page' => -1,
+			'post_status'    => 'any',
+		)
+	);
+	
+	$migrated_count = 0;
+	
+	foreach ( $products as $product ) {
+		$terms_to_add = array();
+		
+		// Check each meta field and add corresponding term
+		if ( get_post_meta( $product->ID, 'has_free_trial', true ) ) {
+			$terms_to_add[] = 'Has Free Trial';
+		}
+		if ( get_post_meta( $product->ID, 'has_free_plan', true ) ) {
+			$terms_to_add[] = 'Has Free Plan';
+		}
+		if ( get_post_meta( $product->ID, 'has_demo', true ) ) {
+			$terms_to_add[] = 'Has Demo';
+		}
+		if ( get_post_meta( $product->ID, 'open_source', true ) ) {
+			$terms_to_add[] = 'Open Source';
+		}
+		if ( get_post_meta( $product->ID, 'ai_powered', true ) ) {
+			$terms_to_add[] = 'AI-Powered';
+		}
+		
+		// Add terms to product if any flags were set
+		if ( ! empty( $terms_to_add ) ) {
+			wp_set_post_terms( $product->ID, $terms_to_add, $taxonomy, false );
+			$migrated_count++;
+		}
+	}
+	
+	// Mark migration as complete
+	update_option( 'main_availability_flags_migrated', true );
+	
+	// Log migration completion
+	if ( $migrated_count > 0 ) {
+		error_log( sprintf( 'Migrated availability flags for %d products to taxonomy', $migrated_count ) );
+	}
+}
+// Run migration on admin_init to ensure all functions are loaded
+add_action( 'admin_init', 'main_migrate_availability_flags_to_taxonomy' );

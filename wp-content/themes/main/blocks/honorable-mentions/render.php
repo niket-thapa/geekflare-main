@@ -18,11 +18,7 @@ usort($products, function($a, $b) {
 ?>
 
 <section id="honorable-mentions" class="flex flex-col gap-7 md:gap-8 pb-8 md:pb-12 lg:pb-20">
-    <h2 class="text-2xl md:text-4xl font-bold leading-none text-gray-800 m-0">
-        <?php echo esc_html($heading); ?>
-    </h2>
-
-    <div class="flex flex-col md:grid md:grid-cols-3 gap-4">
+    <div class="flex flex-col md:grid md:grid-cols-2 gap-4">
         <?php foreach ($products as $product_data) : 
             $product = main_get_product_data($product_data['id']);
             if (!$product) continue;
@@ -38,7 +34,7 @@ usort($products, function($a, $b) {
                 $read_review_url = $product['permalink'];
             }
         ?>
-            <article class="flex flex-col gap-6 p-5 bg-white border border-gray-200 rounded-2xl flex-1">
+            <article class="honorable-mention-item flex flex-col gap-6 p-5 bg-white border border-gray-200 rounded-2xl flex-1">
                 <!-- Header with Logo and Badge -->
                 <div class="flex justify-between items-center gap-4">
                     <?php if (!empty($product['logo']) || !empty($product['logo_attachment_id'])) : ?>
@@ -101,7 +97,7 @@ usort($products, function($a, $b) {
                         <?php echo esc_html($product['name']); ?>
                     </h3>
                     <?php if (!empty($custom_note)) : ?>
-                        <div class="text-sm md:text-base font-medium leading-5 md:leading-6 tracking-2p md:tracking-1p text-gray-500 line-clamp-2">
+                        <div class="text-sm md:text-base font-medium leading-5 md:leading-6 tracking-2p md:tracking-1p text-gray-500 line-clamp-2 honorable-mention-item__text">
                             <?php echo esc_html($custom_note); ?>
                         </div>
                     <?php endif; ?>

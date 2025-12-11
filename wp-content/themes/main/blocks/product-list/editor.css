@@ -2,3 +2,8 @@
  * Product List Block - Editor Styles
  * Styles for the product list block in the editor
  */
+
+/* Hide product numbers when toggle is off */
+.hide-product-numbers .product-number {
+  display: none !important;
+}
