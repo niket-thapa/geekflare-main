@@ -967,32 +967,32 @@ function main_render_product_details_meta_box( $post ) {
 	$display_rating = ! empty( $rating ) ? $rating : $auto_rating;
 	?>
 	<div class="main-product-meta">
-		<!-- Product Name -->
+		<?php // Product Name ?>
 		<div class="main-product-meta__section">
 			<label for="main-product-name"><strong><?php esc_html_e( 'Product Name', 'main' ); ?></strong></label>
 			<input type="text" id="main-product-name" name="product_name" value="<?php echo esc_attr( main_get_product_meta_value( $post->ID, 'product_name' ) ); ?>" class="widefat" placeholder="<?php esc_attr_e( 'Defaults to the title if left blank.', 'main' ); ?>">
 		</div>
 
-		<!-- Product Tagline -->
+		<?php // Product Tagline ?>
 		<div class="main-product-meta__field">
 			<label for="main-product-tagline"><strong><?php esc_html_e( 'Product Tagline', 'main' ); ?></strong></label>
 			<input type="text" id="main-product-tagline" name="tagline" value="<?php echo esc_attr( main_get_product_meta_value( $post->ID, 'tagline' ) ); ?>" class="widefat">
 		</div>
 
-		<!-- Product Description -->
+		<?php // Product Description ?>
 		<div class="main-product-meta__field">
 			<label for="main-product-custom-note"><strong><?php esc_html_e( 'Product Description', 'main' ); ?></strong></label>
 			<textarea id="main-product-custom-note" name="custom_note" rows="3" class="widefat"><?php echo esc_textarea( main_get_product_meta_value( $post->ID, 'custom_note' ) ); ?></textarea>
 			<p class="description"><?php esc_html_e( 'This description is used in honorable mentions and top alternatives product cards.', 'main' ); ?></p>
 		</div>
 
-		<!-- Product Website -->
+		<?php // Product Website ?>
 		<div class="main-product-meta__field">
 			<label for="main-product-website"><strong><?php esc_html_e( 'Product Website', 'main' ); ?></strong></label>
 			<input type="url" id="main-product-website" name="website_url" value="<?php echo esc_attr( $website_url ); ?>" class="widefat">
 		</div>
 
-		<!-- Product Logo -->
+		<?php // Product Logo ?>
 		<div class="main-product-meta__logo">
 			<label><strong><?php esc_html_e( 'Product Logo', 'main' ); ?></strong></label>
 			<div class="main-product-meta__logo-preview">
@@ -1007,13 +1007,13 @@ function main_render_product_details_meta_box( $post ) {
 			<button type="button" class="button button-secondary main-product-fetch-logo" data-post-id="<?php echo absint( $post->ID ); ?>" data-website="<?php echo esc_url( $website_url ); ?>"><?php esc_html_e( 'Fetch from Website URL', 'main' ); ?></button>
 		</div>
 
-		<!-- Product Pricing Summary -->
+		<?php // Product Pricing Summary ?>
 		<div class="main-product-meta__field">
 			<label for="main-product-pricing"><strong><?php esc_html_e( 'Product Pricing Summary', 'main' ); ?></strong></label>
 			<input type="text" id="main-product-pricing" name="pricing_summary" value="<?php echo esc_attr( main_get_product_meta_value( $post->ID, 'pricing_summary' ) ); ?>" class="widefat">
 		</div>
 
-		<!-- Product Award -->
+		<?php // Product Award ?>
 		<div class="main-product-meta__field">
 			<label for="main-product-award"><strong><?php esc_html_e( 'Product Award', 'main' ); ?></strong></label>
 			<select id="main-product-award" name="award" class="widefat">
@@ -1027,7 +1027,7 @@ function main_render_product_details_meta_box( $post ) {
 			<p class="description"><?php esc_html_e( 'Award badge can be displayed using the image URL mapped to the selected option.', 'main' ); ?></p>
 		</div>
 
-		<!-- Product Rating -->
+		<?php // Product Rating ?>
 		<div class="main-product-meta__field">
 			<label for="main-product-rating">
 				<strong><?php esc_html_e( 'Our Rating (1.0 - 5.0)', 'main' ); ?></strong>
@@ -1103,7 +1103,7 @@ function main_render_product_details_meta_box( $post ) {
 			</div>
 		</div>
 
-		<!-- Rating Count -->
+		<?php // Rating Count ?>
 		<div class="main-product-meta__field" style="margin-top: 15px;">
 				<label for="main-product-rating-count">
 						<strong><?php esc_html_e( 'Rating Count', 'main' ); ?></strong>
@@ -1122,13 +1122,13 @@ function main_render_product_details_meta_box( $post ) {
 				</p>
 		</div>
 
-		<!-- Affiliate / CTA URL -->
+		<?php // Affiliate / CTA URL ?>
 		<div class="main-product-meta__field">
 			<label for="main-product-affiliate"><strong><?php esc_html_e( 'Affiliate / CTA URL', 'main' ); ?></strong></label>
 			<input type="url" id="main-product-affiliate" name="affiliate_link" value="<?php echo esc_url( main_get_product_meta_value( $post->ID, 'affiliate_link' ) ); ?>" class="widefat">
 		</div>
 
-		<!-- Product Update Logs -->
+		<?php // Product Update Logs ?>
 		<div class="main-product-meta__field">
 			<label><strong><?php esc_html_e( 'Product Update Logs', 'main' ); ?></strong></label>
 			<p class="description"><?php esc_html_e( 'Add dated entries showing product evolution. Most recent first.', 'main' ); ?></p>

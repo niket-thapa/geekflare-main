@@ -183,3 +183,9 @@ function main_get_social_share_url( $platform, $url = '', $title = '' ) {
 			return $url;
 	}
 }
+
+// Return false for calculated resized image dimensions
+add_filter( 'image_resize_dimensions', '__return_false' );
+
+// Return an empty list of image sizes to generate on upload
+add_filter( 'intermediate_image_sizes_advanced', '__return_empty_array' );

@@ -71,13 +71,13 @@ $filter_data = array(
     class="buying_guide_item bg-white border border-gray-200 rounded-2xl md:rounded-3xl relative <?php echo $is_highlighted ? 'mt-[1.3125rem] md:mt-0' : 'mt-[1.3125rem] md:mt-0'; ?>"
     data-product-filter='<?php echo wp_json_encode( $filter_data ); ?>'>
     
-    <!-- Product Number -->
+    <?php // Product Number ?>
     <div class="product-number <?php echo $is_highlighted ? 'active' : ''; ?>" aria-label="Rank <?php echo esc_attr( $product_number ); ?>">
         <span aria-hidden="true"><?php echo esc_html( $product_number ); ?></span>
     </div>
     
     <div class="p-5 md:p-6 lg:p-7 xl:p-8 flex flex-col gap-4 md:gap-6 [&_p]:my-0 [&_p:empty]:hidden">
-        <!-- Product Header -->
+        <?php // Product Header ?>
         <div class="flex flex-col md:flex-row md:justify-between md:items-start md:flex-wrap gap-6 md:gap-y-4">
             <div class="flex gap-4 md:gap-6 items-center">
                 <?php if ( $product['logo'] ) : ?>
@@ -114,12 +114,12 @@ $filter_data = array(
                 </div>
             </div>
             
-            <!-- Product Badges -->
+            <?php // Product Badges ?>
             <div class="flex flex-row flex-wrap items-start content-start p-0 gap-2 md:order-2 md:w-full md:flex-[100%]">
                 <?php echo main_get_product_badges( $product ); ?>
             </div>
             
-            <!-- CTA Button -->
+            <?php // CTA Button ?>
             <a href="<?php echo esc_url( ! empty( $product['affiliate_link'] ) ? $product['affiliate_link'] : ( ! empty( $product['website_url'] ) ? $product['website_url'] : $product['permalink'] ) ); ?>" 
                class="btn btn--primary rounded-full"
                target="_blank"
@@ -131,7 +131,7 @@ $filter_data = array(
             </a>
         </div>
         
-        <!-- Product Content (InnerBlocks) -->
+        <?php // Product Content (InnerBlocks) ?>
         <?php echo $content; ?>
     </div>
         

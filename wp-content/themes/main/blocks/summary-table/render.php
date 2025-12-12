@@ -13,37 +13,52 @@ if ( empty( $attributes['products'] ) ) {
 
 $products_data = $attributes['products'];
 $columns = isset( $attributes['columns'] ) ? $attributes['columns'] : array();
+$product_column_label = isset( $attributes['productColumnLabel'] ) && ! empty( $attributes['productColumnLabel'] ) ? $attributes['productColumnLabel'] : __( 'Product', 'main' );
 $last_column_config = isset( $attributes['lastColumnConfig'] ) ? $attributes['lastColumnConfig'] : array(
-    'buttonText' => 'Try Now',
+    'buttonText' => 'Explore',
     'urlSource'  => 'affiliate',
     'customUrl'  => '',
 );
 
-// Field labels mapping
+// Get field labels dynamically from product-availability taxonomy
 $field_labels = array(
     'tagline'        => 'Tagline',
     'pricing_summary' => 'Pricing',
     'our_rating'     => 'Rating',
-    'has_free_plan'  => 'Free Plan',
-    'has_free_trial' => 'Free Trial',
-    'has_demo'       => 'Demo',
-    'open_source'    => 'Open Source',
-    'ai_powered'     => 'AI-Powered',
     'award'          => 'Award',
     'custom_note'    => 'Product Description',
 );
+
+// Add all product-availability taxonomy terms as field options
+if ( defined( 'MAIN_PRODUCTS_AVAILABILITY_TAXONOMY' ) ) {
+    $availability_terms = get_terms(
+        array(
+            'taxonomy'   => MAIN_PRODUCTS_AVAILABILITY_TAXONOMY,
+            'hide_empty' => false,
+            'orderby'    => 'name',
+            'order'      => 'ASC',
+        )
+    );
+    
+    if ( ! is_wp_error( $availability_terms ) && ! empty( $availability_terms ) ) {
+        foreach ( $availability_terms as $term ) {
+            // Use term slug as field key and term name as label
+            $field_labels[ 'availability_' . $term->slug ] = $term->name;
+        }
+    }
+}
 ?>
 
 <div class="overflow-auto rounded-2xl md:rounded-3xl border border-gray-200 my-14 lg:mt-16 lg:mb-20 lg:-me-[21.5rem] lg:relative lg:z-30">
     <table class="product-compare-table border-none w-full max-w-full m-0">
         <thead>
             <tr>
-                <!-- First Column: Product (Fixed) -->
+                <?php // First Column: Product (Fixed) ?>
                 <th class="bg-gray-100 whitespace-nowrap text-left p-4 md:px-6 text-[0.625rem] md:text-xs leading-4 font-bold text-gray-500 uppercase tracking-[0.12em]">
-                    <?php esc_html_e( 'Product', 'main' ); ?>
+                    <?php echo esc_html( $product_column_label ); ?>
                 </th>
 
-                <!-- Dynamic Columns -->
+                <?php // Dynamic Columns ?>
                 <?php foreach ( $columns as $column ) : 
                     // Handle custom columns
                     if ( isset( $column['type'] ) && 'custom' === $column['type'] ) {
@@ -65,10 +80,8 @@ $field_labels = array(
                     </th>
                 <?php endforeach; ?>
 
-                <!-- Last Column: Action (Fixed) -->
-                <th class="bg-gray-100 whitespace-nowrap text-left p-4 md:px-6 text-[0.625rem] md:text-xs leading-4 font-bold text-gray-500 uppercase tracking-[0.12em]">
-                    &nbsp;
-                </th>
+                <?php // Last Column: Action (Fixed) ?>
+                <th class="bg-gray-100 whitespace-nowrap text-left p-4 md:px-6 text-[0.625rem] md:text-xs leading-4 font-bold text-gray-500 uppercase tracking-[0.12em]">Explore</th>
             </tr>
         </thead>
         <tbody>
@@ -96,10 +109,10 @@ $field_labels = array(
                     }
                 }
 
-                $button_text = isset( $last_column_config['buttonText'] ) ? $last_column_config['buttonText'] : __( 'Try Now', 'main' );
+                $button_text = isset( $last_column_config['buttonText'] ) ? $last_column_config['buttonText'] : __( 'Explore', 'main' );
             ?>
                 <tr>
-                    <!-- First Column: Product -->
+                    <?php // First Column: Product ?>
                     <td class="p-0">
                         <div class="flex gap-2 items-center md:gap-3 px-4 py-[1.0625rem] md:px-6 md:py-5.5">
                             <?php if ( ! empty( $product['logo'] ) ) : ?>
@@ -113,7 +126,7 @@ $field_labels = array(
                         </div>
                     </td>
 
-                    <!-- Dynamic Columns -->
+                    <?php // Dynamic Columns ?>
                     <?php foreach ( $columns as $column ) : 
                         // Get column width
                         $column_width = isset( $column['width'] ) && ! empty( $column['width'] ) ? $column['width'] : '';
@@ -145,45 +158,54 @@ $field_labels = array(
                         $field = isset( $column['field'] ) ? $column['field'] : '';
                         $value = '';
                         
-                        // Get value based on field type
-                        switch ( $field ) {
-                            case 'tagline':
-                                $value = $product['tagline'];
-                                break;
-                            case 'pricing_summary':
-                                $value = $product['pricing'];
-                                break;
-                            case 'our_rating':
-                                $value = $product['rating'];
-                                break;
-                            case 'has_free_plan':
-                                $value = $product['has_free_plan'];
-                                break;
-                            case 'has_free_trial':
-                                $value = $product['has_free_trial'];
-                                break;
-                            case 'has_demo':
-                                $value = $product['has_demo'];
-                                break;
-                            case 'open_source':
-                                $value = $product['open_source'];
-                                break;
-                            case 'ai_powered':
-                                $value = isset( $product['ai_powered'] ) ? $product['ai_powered'] : false;
-                                break;
-                            case 'award':
-                                $value = $product['award'];
-                                break;
-                            case 'custom_note':
-                                $value = isset( $product['custom_note'] ) ? $product['custom_note'] : '';
-                                break;
+                        // Check if this is an availability taxonomy field
+                        if ( strpos( $field, 'availability_' ) === 0 ) {
+                            // Extract term slug from field name (e.g., 'availability_has-free-trial' -> 'has-free-trial')
+                            $term_slug = str_replace( 'availability_', '', $field );
+                            
+                            // Fetch availability flags from taxonomy (always use slugs for comparison)
+                            $availability_flags = array();
+                            if ( isset( $product['id'] ) && defined( 'MAIN_PRODUCTS_AVAILABILITY_TAXONOMY' ) ) {
+                                $terms = wp_get_post_terms( $product['id'], MAIN_PRODUCTS_AVAILABILITY_TAXONOMY, array( 'fields' => 'slugs' ) );
+                                if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
+                                    $availability_flags = $terms;
+                                }
+                            }
+                            
+                            // Check if product has this availability term (compare by slug)
+                            $value = in_array( $term_slug, $availability_flags, true );
+                        } else {
+                            // Get value based on field type for standard fields
+                            switch ( $field ) {
+                                case 'tagline':
+                                    $value = $product['tagline'];
+                                    break;
+                                case 'pricing_summary':
+                                    $value = $product['pricing'];
+                                    break;
+                                case 'our_rating':
+                                    $value = $product['rating'];
+                                    break;
+                                case 'award':
+                                    $value = $product['award'];
+                                    break;
+                                case 'custom_note':
+                                    $value = isset( $product['custom_note'] ) ? $product['custom_note'] : '';
+                                    break;
+                                default:
+                                    $value = '';
+                                    break;
+                            }
                         }
                     ?>
                         <td class="p-0"<?php echo $width_style; ?>>
                             <div class="px-4 py-[1.0625rem] md:px-6 md:py-5.5">
                                 <?php
                                 // Render based on field type
-                                if ( in_array( $field, array( 'has_free_plan', 'has_free_trial', 'has_demo', 'open_source', 'ai_powered' ), true ) ) {
+                                // Check if this is a boolean field (availability taxonomy fields)
+                                $is_boolean_field = strpos( $field, 'availability_' ) === 0;
+                                
+                                if ( $is_boolean_field ) {
                                     // Boolean fields - show checkmark or X
                                     if ( $value ) {
                                         ?>
@@ -227,7 +249,7 @@ $field_labels = array(
                         </td>
                     <?php endforeach; ?>
 
-                    <!-- Last Column: Action -->
+                    <?php // Last Column: Action ?>
                     <td class="p-0">
                         <div class="flex flex-col px-4 py-[1.0625rem] md:px-6 md:py-5.5">
                             <a href="<?php echo esc_url( $action_url ); ?>" 

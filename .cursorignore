@@ -1,0 +1,9 @@
+node_modules/
+wp-admin/
+wp-includes/
+*.zip
+*.jpg
+*.png
+*.sql
+vendor/
+uploads/

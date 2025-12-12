@@ -5,6 +5,7 @@
  * Functions for generating dynamic sidebars with auto TOC.
  * Fixed: Skip H3s inside #products, prevent duplicates.
  * Fixed: Ensure final_verdict gets default title and skips internal headings.
+ * Fixed: IDs starting with numbers now get 'heading-' prefix.
  * Added: Configurable exclusion classes for TOC generation.
  *
  * @package Main
@@ -14,6 +15,36 @@
 // Prevent direct access
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
+}
+
+/**
+ * Sanitize Heading Text to Valid HTML ID
+ *
+ * Converts heading text to a valid HTML ID that doesn't start with a number.
+ * HTML IDs must start with a letter (A-Z, a-z) per HTML specification.
+ *
+ * @since 1.0.0
+ * @param string $text The heading text to sanitize.
+ * @return string Valid HTML ID.
+ */
+function main_sanitize_heading_id( $text ) {
+	// Check if text starts with a number BEFORE sanitization
+	$starts_with_number = preg_match( '/^\s*[0-9]/', $text );
+	
+	// Use WordPress sanitize_title for basic sanitization
+	$id = sanitize_title( $text );
+	
+	// If original text started with a number OR sanitized ID starts with a number, prepend 'heading-'
+	if ( $starts_with_number || preg_match( '/^[0-9]/', $id ) ) {
+		$id = 'heading-' . $id;
+	}
+	
+	// If ID is empty after sanitization, use a fallback
+	if ( empty( $id ) ) {
+		$id = 'heading-' . md5( $text );
+	}
+	
+	return $id;
 }
 
 /**
@@ -30,6 +61,7 @@ function main_get_toc_exclusion_classes() {
 	$exclusion_classes = array(
 		'pros-cons',
 		'key-features',
+		'honorable-mentions', // Added to exclude honorable mentions section
 	);
 
 	/**
@@ -56,6 +88,7 @@ function main_get_toc_exclusion_classes() {
 function main_get_toc_exclusion_ids() {
 	$exclusion_ids = array(
 		'products', // Already handled, but included for completeness
+		'honorable-mentions', // Added to exclude honorable mentions section by ID
 		// Add more IDs here as needed:
 		// 'another-id',
 	);
@@ -243,7 +276,6 @@ function main_get_post_headings( $post_id = 0 ) {
 	$custom_block_selectors = array(
 		'why_trust_us'       => array( 'type' => 'class', 'default_text' => 'Why Trust Us' ),
 		'final_verdict'      => array( 'type' => 'class', 'default_text' => 'Final Verdict' ),
-		'honorable-mentions' => array( 'type' => 'id', 'default_text' => 'Honorable Mentions' ),
 	);
 
 	// Only add products with nested items for buying guide template
@@ -301,10 +333,10 @@ function main_get_post_headings( $post_id = 0 ) {
 			continue;
 		}
 
-		// Get or create ID
+		// Get or create ID using custom sanitization
 		$id = $heading->getAttribute( 'id' );
 		if ( empty( $id ) ) {
-			$id = sanitize_title( $text );
+			$id = main_sanitize_heading_id( $text );
 		}
 
 		// Ensure unique ID
@@ -424,10 +456,10 @@ function main_get_product_items( $dom, $xpath ) {
 			$h3 = $h3_elements->item( 0 );
 			$product_name = trim( $h3->textContent );
 
-			// Get or create ID
+			// Get or create ID using custom sanitization
 			$product_id = $h3->getAttribute( 'id' );
 			if ( empty( $product_id ) ) {
-				$product_id = sanitize_title( $product_name );
+				$product_id = main_sanitize_heading_id( $product_name );
 			}
 
 			$products[] = array(
@@ -472,7 +504,7 @@ function main_add_heading_ids( $content ) {
 		if ( ! $heading->hasAttribute( 'id' ) ) {
 			$text = trim( $heading->textContent );
 			if ( ! empty( $text ) ) {
-				$id = sanitize_title( $text );
+				$id = main_sanitize_heading_id( $text );
 				$base_id = $id;
 				$counter = 1;
 				
@@ -524,7 +556,7 @@ function main_add_heading_ids( $content ) {
 		if ( ! $h3->hasAttribute( 'id' ) ) {
 			$text = trim( $h3->textContent );
 			if ( ! empty( $text ) ) {
-				$id = sanitize_title( $text );
+				$id = main_sanitize_heading_id( $text );
 				$base_id = $id;
 				$counter = 1;
 				

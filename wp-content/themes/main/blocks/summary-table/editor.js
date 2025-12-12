@@ -16,16 +16,11 @@
   var useEffect = wp.element.useEffect;
   var useRef = wp.element.useRef;
 
-  // Available field options for columns
-  var FIELD_OPTIONS = [
+  // Base field options (non-taxonomy fields)
+  var BASE_FIELD_OPTIONS = [
     { value: "tagline", label: "Tagline" },
     { value: "pricing_summary", label: "Pricing Summary" },
     { value: "our_rating", label: "Rating" },
-    { value: "has_free_plan", label: "Free Plan" },
-    { value: "has_free_trial", label: "Free Trial" },
-    { value: "has_demo", label: "Demo" },
-    { value: "open_source", label: "Open Source" },
-    { value: "ai_powered", label: "AI-Powered" },
     { value: "award", label: "Award" },
     { value: "custom_note", label: "Product Description" },
   ];
@@ -37,8 +32,9 @@
       var products = attributes.products || [];
       var selectedFields = attributes.selectedFields || [];
       var columns = attributes.columns || [];
+      var productColumnLabel = attributes.productColumnLabel || "Product";
       var lastColumnConfig = attributes.lastColumnConfig || {
-        buttonText: "Try Now",
+        buttonText: "Explore",
         urlSource: "affiliate",
         customUrl: "",
       };
@@ -77,6 +73,20 @@
       var isLoadingProductsState = useState(false);
       var isLoadingProducts = isLoadingProductsState[0];
       var setIsLoadingProducts = isLoadingProductsState[1];
+
+      // Availability taxonomy terms state
+      var availabilityTermsState = useState([]);
+      var availabilityTerms = availabilityTermsState[0];
+      var setAvailabilityTerms = availabilityTermsState[1];
+
+      var isLoadingAvailabilityTermsState = useState(false);
+      var isLoadingAvailabilityTerms = isLoadingAvailabilityTermsState[0];
+      var setIsLoadingAvailabilityTerms = isLoadingAvailabilityTermsState[1];
+
+      // Field options state - combines base fields with taxonomy fields
+      var fieldOptionsState = useState(BASE_FIELD_OPTIONS.slice());
+      var fieldOptions = fieldOptionsState[0];
+      var setFieldOptions = fieldOptionsState[1];
 
       // UI state for collapsible sections
       var showSearchState = useState(products.length === 0);
@@ -242,6 +252,43 @@
           });
       }, []);
 
+      // Fetch product-availability taxonomy terms on mount
+      useEffect(function () {
+        if (availabilityTerms.length > 0) return;
+
+        setIsLoadingAvailabilityTerms(true);
+        apiFetch({
+          path: "/wp/v2/product-availability?per_page=100&orderby=name&order=asc&hide_empty=false",
+        })
+          .then(function (results) {
+            var terms = results || [];
+            setAvailabilityTerms(terms);
+
+            // Build field options: base fields + taxonomy fields (no duplicates)
+            var newFieldOptions = BASE_FIELD_OPTIONS.slice();
+            terms.forEach(function (term) {
+              // Check if already exists to avoid duplicates
+              var exists = newFieldOptions.some(function (opt) {
+                return opt.value === "availability_" + term.slug;
+              });
+              if (!exists) {
+                newFieldOptions.push({
+                  value: "availability_" + term.slug,
+                  label: term.name,
+                });
+              }
+            });
+            setFieldOptions(newFieldOptions);
+
+            setIsLoadingAvailabilityTerms(false);
+          })
+          .catch(function (error) {
+            console.error("Error fetching availability terms:", error);
+            setAvailabilityTerms([]);
+            setIsLoadingAvailabilityTerms(false);
+          });
+      }, []);
+
       // Helper function to get default width for a field
       function getDefaultColumnWidth(field) {
         if (field === "tagline") {
@@ -253,22 +300,25 @@
       }
 
       // Initialize columns from selectedFields if columns is empty
-      useEffect(function () {
-        if (columns.length === 0 && selectedFields.length > 0) {
-          var newColumns = selectedFields.map(function (field) {
-            var fieldOption = FIELD_OPTIONS.find(function (opt) {
-              return opt.value === field;
+      useEffect(
+        function () {
+          if (columns.length === 0 && selectedFields.length > 0) {
+            var newColumns = selectedFields.map(function (field) {
+              var fieldOption = fieldOptions.find(function (opt) {
+                return opt.value === field;
+              });
+              return {
+                type: "field",
+                field: field,
+                label: fieldOption ? fieldOption.label : field,
+                width: getDefaultColumnWidth(field),
+              };
             });
-            return {
-              type: "field",
-              field: field,
-              label: fieldOption ? fieldOption.label : field,
-              width: getDefaultColumnWidth(field),
-            };
-          });
-          setAttributes({ columns: newColumns });
-        }
-      }, []);
+            setAttributes({ columns: newColumns });
+          }
+        },
+        [fieldOptions]
+      );
 
       // Keep productItemRefs in sync with products length
       useEffect(
@@ -601,7 +651,7 @@
 
           if (!columnExists) {
             newSelectedFields.push(fieldValue);
-            var fieldOption = FIELD_OPTIONS.find(function (opt) {
+            var fieldOption = fieldOptions.find(function (opt) {
               return opt.value === fieldValue;
             });
             var newColumns = columns.slice();
@@ -845,7 +895,7 @@
                         "bg-gray-100 whitespace-nowrap text-left p-4 text-xs font-bold text-gray-500 uppercase",
                       style: { border: "1px solid #e5e7eb" },
                     },
-                    "Product"
+                    productColumnLabel || "Product"
                   ),
                   columns.map(function (column, colIndex) {
                     var columnWidth = column.width || "auto";
@@ -1096,7 +1146,7 @@
                               fontSize: "14px",
                             },
                           },
-                          lastColumnConfig.buttonText || "Try Now"
+                          lastColumnConfig.buttonText || "Explore"
                         )
                       )
                     )
@@ -1144,7 +1194,7 @@
                   gap: "8px",
                 },
               },
-              FIELD_OPTIONS.map(function (option) {
+              fieldOptions.map(function (option) {
                 return el(CheckboxControl, {
                   key: option.value,
                   label: option.label,
@@ -1326,6 +1376,25 @@
           el(
             PanelBody,
             {
+              title: __("Table Settings", "main"),
+              initialOpen: false,
+            },
+            el(TextControl, {
+              label: __("Product Column Label", "main"),
+              value: productColumnLabel,
+              onChange: function (value) {
+                setAttributes({ productColumnLabel: value || "Product" });
+              },
+              placeholder: __("Product", "main"),
+              help: __(
+                "Label for the first column (product name column)",
+                "main"
+              ),
+            })
+          ),
+          el(
+            PanelBody,
+            {
               title: __("Last Column (Action)", "main"),
               initialOpen: false,
             },
@@ -1335,7 +1404,7 @@
               onChange: function (value) {
                 updateLastColumnConfig("buttonText", value);
               },
-              placeholder: __("Try Now", "main"),
+              placeholder: __("Explore", "main"),
               style: { marginBottom: "12px" },
             }),
             el(SelectControl, {

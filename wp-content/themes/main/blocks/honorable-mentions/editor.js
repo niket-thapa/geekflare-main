@@ -542,7 +542,7 @@
           "section",
           {
             id: "honorable-mentions",
-            className: "flex flex-col gap-7 md:gap-8 pb-8 md:pb-12 lg:pb-20",
+            className: "flex flex-col gap-7 md:gap-8 pb-4 md:pb-6",
           },
 
           // Product Search and Selection

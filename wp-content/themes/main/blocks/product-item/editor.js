@@ -362,36 +362,12 @@
                     scoreBreakdown = [];
                   }
 
-                  // Get availability flags from taxonomy (via custom REST field)
+                  // Get availability terms from taxonomy (via custom REST field)
                   var availabilityData =
                     post.product_availability_data &&
                     Array.isArray(post.product_availability_data)
                       ? post.product_availability_data
                       : [];
-
-                  // Map availability term names to badge flags
-                  var availabilityFlags = {
-                    ai_powered: false,
-                    open_source: false,
-                    has_free_plan: false,
-                    has_free_trial: false,
-                    has_demo: false,
-                  };
-
-                  availabilityData.forEach(function (term) {
-                    var termName = term.name || "";
-                    if (termName === "AI-Powered") {
-                      availabilityFlags.ai_powered = true;
-                    } else if (termName === "Open Source") {
-                      availabilityFlags.open_source = true;
-                    } else if (termName === "Has Free Plan") {
-                      availabilityFlags.has_free_plan = true;
-                    } else if (termName === "Has Free Trial") {
-                      availabilityFlags.has_free_trial = true;
-                    } else if (termName === "Has Demo") {
-                      availabilityFlags.has_demo = true;
-                    }
-                  });
 
                   var productDataObj = {
                     id: post.id,
@@ -402,15 +378,11 @@
                     logo_attachment_id: logoId,
                     website_url: websiteUrl,
                     permalink: postLink,
-                    ai_powered: availabilityFlags.ai_powered,
-                    open_source: availabilityFlags.open_source,
-                    has_free_plan: availabilityFlags.has_free_plan,
-                    has_free_trial: availabilityFlags.has_free_trial,
-                    has_demo: availabilityFlags.has_demo,
+                    availability_terms: availabilityData,
                     update_logs: updateLogs,
-                    score_breakdown: scoreBreakdownJson, // Store as JSON string for auto-loading
-                    product_features: [], // Will be populated from taxonomy
-                    features_loaded: false, // Flag to track if features have been loaded
+                    score_breakdown: scoreBreakdownJson,
+                    product_features: [],
+                    features_loaded: false,
                   };
 
                   // Get product features from the REST response (via custom REST field)
@@ -1154,7 +1126,7 @@
                   )
                 ),
 
-                // Product Badges
+                // Product Badges - DYNAMIC RENDERING
                 el(
                   "div",
                   {
@@ -1163,130 +1135,74 @@
                   },
                   (function () {
                     var badges = [];
-                    if (!productData) {
+                    if (!productData || !productData.availability_terms) {
                       return badges;
                     }
-                    // Get badge flags directly from product data
-                    var aiPowered = !!productData.ai_powered;
-                    var openSource = !!productData.open_source;
-                    var hasFreePlan = !!productData.has_free_plan;
-                    var hasFreeTrial = !!productData.has_free_trial;
-                    var hasDemo = !!productData.has_demo;
 
-                    // AI-Powered - gradient badge
-                    if (aiPowered) {
-                      badges.push(
-                        el(
-                          "button",
-                          {
-                            type: "button",
-                            key: "ai-powered",
-                            className:
-                              "product-badge product-badge--gradient flex flex-row justify-center items-center gap-2.5 rounded-lg md:rounded-xl",
-                          },
-                          el(
-                            "span",
-                            {
-                              className:
-                                "text-sm md:text-base font-semibold leading-[1.375rem] text-gray-800",
-                            },
-                            "AI-Powered"
-                          )
-                        )
-                      );
-                    }
+                    // Get availability terms from product data
+                    var availabilityData = Array.isArray(
+                      productData.availability_terms
+                    )
+                      ? productData.availability_terms
+                      : [];
 
-                    // Open Source - outline badge
-                    if (openSource) {
-                      badges.push(
-                        el(
-                          "button",
-                          {
-                            type: "button",
-                            key: "open-source",
-                            className:
-                              "product-badge product-badge--outline flex flex-row justify-center items-center py-[0.1875rem] md:py-1.5 px-3 md:px-4 gap-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl",
-                          },
-                          el(
-                            "span",
-                            {
-                              className:
-                                "text-sm md:text-base font-medium leading-[1.375rem] text-gray-800 tracking-2p",
-                            },
-                            "Open Source"
-                          )
-                        )
-                      );
-                    }
+                    // Create badges for each availability term
+                    availabilityData.forEach(function (term) {
+                      var termName = term.name || "";
+                      var termSlug = term.slug || "";
 
-                    // Free Plan
-                    if (hasFreePlan) {
-                      badges.push(
-                        el(
-                          "button",
-                          {
-                            type: "button",
-                            key: "free-plan",
-                            className:
-                              "product-badge product-badge--outline flex flex-row justify-center items-center py-[0.1875rem] md:py-1.5 px-3 md:px-4 gap-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl",
-                          },
-                          el(
-                            "span",
-                            {
-                              className:
-                                "text-sm md:text-base font-medium leading-[1.375rem] text-gray-800 tracking-2p",
-                            },
-                            "Free Plan"
-                          )
-                        )
-                      );
-                    }
+                      if (!termName) {
+                        return; // Skip empty terms
+                      }
 
-                    // Free Trial
-                    if (hasFreeTrial) {
-                      badges.push(
-                        el(
-                          "button",
-                          {
-                            type: "button",
-                            key: "free-trial",
-                            className:
-                              "product-badge product-badge--outline flex flex-row justify-center items-center py-[0.1875rem] md:py-1.5 px-3 md:px-4 gap-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl",
-                          },
-                          el(
-                            "span",
-                            {
-                              className:
-                                "text-sm md:text-base font-medium leading-[1.375rem] text-gray-800 tracking-2p",
-                            },
-                            "Free Trial"
-                          )
-                        )
-                      );
-                    }
+                      // Check if this is a special gradient badge (AI-Powered)
+                      var isGradient =
+                        termSlug === "ai-powered" || termName === "AI-Powered";
 
-                    // Demo
-                    if (hasDemo) {
-                      badges.push(
-                        el(
-                          "button",
-                          {
-                            type: "button",
-                            key: "demo",
-                            className:
-                              "product-badge product-badge--outline flex flex-row justify-center items-center py-[0.1875rem] md:py-1.5 px-3 md:px-4 gap-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl",
-                          },
+                      if (isGradient) {
+                        // Gradient badge style
+                        badges.push(
                           el(
-                            "span",
+                            "button",
                             {
+                              type: "button",
+                              key: termSlug,
                               className:
-                                "text-sm md:text-base font-medium leading-[1.375rem] text-gray-800 tracking-2p",
+                                "product-badge product-badge--gradient flex flex-row justify-center items-center gap-2.5 rounded-lg md:rounded-xl",
                             },
-                            "Demo"
+                            el(
+                              "span",
+                              {
+                                className:
+                                  "text-sm md:text-base font-semibold leading-[1.375rem] text-gray-800",
+                              },
+                              termName
+                            )
                           )
-                        )
-                      );
-                    }
+                        );
+                      } else {
+                        // Outline badge style (default for all other badges)
+                        badges.push(
+                          el(
+                            "button",
+                            {
+                              type: "button",
+                              key: termSlug,
+                              className:
+                                "product-badge product-badge--outline flex flex-row justify-center items-center py-[0.1875rem] md:py-1.5 px-3 md:px-4 gap-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl",
+                            },
+                            el(
+                              "span",
+                              {
+                                className:
+                                  "text-sm md:text-base font-medium leading-[1.375rem] text-gray-800 tracking-2p",
+                              },
+                              termName
+                            )
+                          )
+                        );
+                      }
+                    });
 
                     return badges;
                   })()

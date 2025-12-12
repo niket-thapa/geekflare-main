@@ -24,7 +24,7 @@ if (empty($pros) && empty($cons)) {
     </h3>
 
     <div class="pros-cons-cards flex flex-col md:flex-row p-0 gap-3 md:gap-4 flex-none self-stretch">
-        <!-- PROS Card -->
+        <?php // PROS Card ?>
         <?php if (!empty($pros)) : ?>
             <div class="pros-card box-border flex flex-col items-start p-4 gap-3 flex-1 bg-white border border-gray-200 rounded-xl">
                 <h4 class="text-xs font-bold leading-4 tracking-[0.1em] uppercase text-success-600 flex-none m-0">
@@ -46,7 +46,7 @@ if (empty($pros) && empty($cons)) {
             </div>
         <?php endif; ?>
 
-        <!-- CONS Card -->
+        <?php // CONS Card ?>
         <?php if (!empty($cons)) : ?>
             <div class="cons-card box-border flex flex-col items-start p-4 gap-3 flex-1 bg-white border border-gray-200 rounded-xl">
                 <h4 class="text-xs font-bold leading-4 tracking-[0.1em] uppercase text-error-600 flex-none m-0">

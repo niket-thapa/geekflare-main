@@ -58,7 +58,7 @@ if ( ! function_exists( 'get_score_color' ) ) {
         <?php echo esc_html($heading); ?>
     </h3>
 
-    <!-- Rating Cards Grid -->
+    <?php // Rating Cards Grid ?>
     <div class="product-score-cards grid grid-cols-2 lg:grid-cols-4 p-0 gap-3 md:gap-4 flex-none self-stretch">
         <?php foreach ($criteria as $criterion) :
             $score = floatval($criterion['score']);
@@ -99,9 +99,9 @@ if ( ! function_exists( 'get_score_color' ) ) {
         <?php endforeach; ?>
     </div>
 
-    <!-- Geekflare Rating & Button -->
+    <?php // Geekflare Rating & Button ?>
     <div class="product-score-footer flex flex-col md:flex-row md:justify-between md:items-center p-0 gap-4 md:gap-5 flex-none self-stretch">
-        <!-- Geekflare Rating Badge -->
+        <?php // Geekflare Rating Badge ?>
         <div class="geekflare-rating-badge box-border flex flex-row items-end py-1.5 px-3.5 md:px-2.5 gap-3 w-full md:w-auto bg-rating-50 border border-rating-border rounded-full flex-none">
             <div class="flex flex-row justify-between items-center p-0 gap-2 flex-none grow-1 md:grow-0 w-full md:w-auto">
                 <span class="text-sm font-medium leading-5 tracking-2p text-gray-800 flex-none">

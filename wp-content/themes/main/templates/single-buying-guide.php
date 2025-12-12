@@ -307,11 +307,11 @@ get_header();
 				<section class="partners-section bg-gray-50 py-16 md:py-24">
 					<div class="container-1056">
 						<div class="flex flex-col items-center gap-12 md:gap-14">
-							<!-- Title -->
+							<?php // Title ?>
 							<h2 class="text-3xl md:text-4xl font-bold leading-none text-gray-800 text-center">
 								<?php echo esc_html( $partners_title ); ?>
 							</h2>
-							<!-- Partners Grid -->
+							<?php // Partners Grid ?>
 							<div class="flex flex-col gap-3 md:gap-6 w-full">
 								<div class="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
 									<?php foreach ( $partners_logos as $partner ) : ?>
@@ -341,36 +341,16 @@ get_header();
 			?>
 			<section class="related-articles-section bg-gray-50 py-16 md:py-24">
 				<div class="container-1056 flex flex-col items-center gap-12 md:gap-14">
-					<h2 class="text-3xl md:text-4xl font-bold leading-none text-gray-800 text-center"><?php esc_html_e( 'Related Guides', 'main' ); ?></h2>
+					<h4 class="text-xl md:text-2xl font-bold leading-none text-gray-800 text-center"><?php esc_html_e( 'More from Geekflare', 'main' ); ?></h4>
 
 					<div class="w-full flex flex-col gap-14 md:grid md:grid-cols-2 md:gap-14 lg:grid-cols-3 xl:gap-12">
 						<?php
 						foreach ( $related as $post ) {
 							setup_postdata( $post );
-							get_template_part( 'template-parts/content', 'card' );
+							get_template_part( 'template-parts/content', 'related' );
 						}
 						wp_reset_postdata();
 						?>
-					</div>
-
-					<div class="flex justify-center">
-						<a href="#" class="btn btn--primary rounded-full">
-							Read More Articles
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								class="button-icon"
-								width="16"
-								height="16"
-								fill="none"
-								viewBox="0 0 16 16">
-								<path
-									stroke="#fff"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="1.5"
-									d="M6 3.333 10.667 8 6 12.666" />
-							</svg>
-						</a>
 					</div>
 				</div>
 			</section>

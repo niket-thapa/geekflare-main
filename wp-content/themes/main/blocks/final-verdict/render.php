@@ -24,7 +24,7 @@ if (empty($perfectFor) && empty($notIdealFor)) {
     </h2>
 
     <div class="flex flex-col gap-3 md:gap-4">
-        <!-- Perfect for Section -->
+        <?php // Perfect for Section ?>
         <?php if (!empty($perfectFor)) : ?>
             <div class="flex flex-col justify-center items-start p-5 gap-3 bg-[#F6FEF9] border border-[#D1FADF] rounded-2xl">
                 <h4 class="text-base font-semibold leading-6 text-gray-800 flex-none m-0">
@@ -44,7 +44,7 @@ if (empty($perfectFor) && empty($notIdealFor)) {
             </div>
         <?php endif; ?>
 
-        <!-- Not ideal for Section -->
+        <?php // Not ideal for Section ?>
         <?php if (!empty($notIdealFor)) : ?>
             <div class="flex flex-col justify-center items-start p-5 gap-3 bg-[#FEF3F2] border border-[#FEE4E2] rounded-2xl">
                 <h4 class="text-base font-semibold leading-6 text-gray-800 flex-none m-0">

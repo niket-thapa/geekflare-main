@@ -17,7 +17,7 @@ usort($products, function($a, $b) {
 });
 ?>
 
-<section id="honorable-mentions" class="flex flex-col gap-7 md:gap-8 pb-8 md:pb-12 lg:pb-20">
+<section id="honorable-mentions" class="flex flex-col gap-7 md:gap-8 pb-4 md:pb-6">
     <div class="flex flex-col md:grid md:grid-cols-2 gap-4">
         <?php foreach ($products as $product_data) : 
             $product = main_get_product_data($product_data['id']);
@@ -35,7 +35,7 @@ usort($products, function($a, $b) {
             }
         ?>
             <article class="honorable-mention-item flex flex-col gap-6 p-5 bg-white border border-gray-200 rounded-2xl flex-1">
-                <!-- Header with Logo and Badge -->
+                <?php // Header with Logo and Badge ?>
                 <div class="flex justify-between items-center gap-4">
                     <?php if (!empty($product['logo']) || !empty($product['logo_attachment_id'])) : ?>
                         <div class="w-8 h-8 [&_img]:w-full [&_img]:h-auto">
@@ -64,7 +64,7 @@ usort($products, function($a, $b) {
                     <?php endif; ?>
                     
                     <?php if ($design_type === 'top-alternatives' && $rating && $rating > 0) : ?>
-                        <!-- Rating Badge for Top Alternatives -->
+                        <?php // Rating Badge for Top Alternatives ?>
                         <div class="flex justify-center items-center py-[0.1875rem] px-2 bg-[#FFFAEB] rounded-full gap-1">
                             <svg
                                 class="w-3.5 md:w-4 h-auto"
@@ -80,7 +80,7 @@ usort($products, function($a, $b) {
                             <span class="text-xs md:text-sm font-semibold text-gray-800 -mb-0.5"><?php echo esc_html(number_format($rating, 1)); ?></span>
                         </div>
                     <?php else : ?>
-                        <!-- Number Badge for Honorable Mentions or Top Alternatives without rating -->
+                        <?php // Number Badge for Honorable Mentions or Top Alternatives without rating ?>
                         <?php if ($rank) : ?>
                             <div class="flex justify-center items-center py-1 px-3.5 bg-gray-100 rounded-full">
                                 <span class="text-sm md:text-base font-semibold leading-5 md:leading-6 text-gray-800">
@@ -91,7 +91,7 @@ usort($products, function($a, $b) {
                     <?php endif; ?>
                 </div>
 
-                <!-- Product Info -->
+                <?php // Product Info ?>
                 <div class="flex flex-col gap-1.5 md:gap-2">
                     <h3 class="text-base md:text-xl font-semibold leading-6 md:leading-7 text-gray-800 m-0">
                         <?php echo esc_html($product['name']); ?>
