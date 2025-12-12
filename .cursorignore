@@ -7,3 +7,34 @@ wp-includes/
 *.sql
 vendor/
 uploads/
+# Ignore core WordPress directories
+wp-admin
+wp-includes
+
+# Ignore uploads and cache
+wp-content/uploads
+wp-content/cache
+wp-content/languages
+wp-content/upgrade
+
+# Ignore all plugins (not using heavy ones)
+wp-content/plugins/*
+
+# Ignore all other themes
+wp-content/themes/*
+!wp-content/themes/main
+
+# Ignore build and dependency folders
+node_modules
+vendor
+dist
+build
+
+# Ignore system and hidden files
+.DS_Store
+*.log
+*.tmp
+
+# Ignore git folders
+.git
+.gitignore

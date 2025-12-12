@@ -1,0 +1,37 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "main/product-item",
+  "title": "Product Item",
+  "category": "main",
+  "icon": "products",
+  "description": "Individual product review with all details",
+  "keywords": ["product", "review", "item"],
+  "textdomain": "main",
+  "parent": ["main/product-list"],
+  "editorStyle": "file:./editor.css",
+  "style": "file:./style.css",
+  "viewScript": "file:./view.js",
+  "render": "file:./render.php",
+  "attributes": {
+    "productId": {
+      "type": "number",
+      "default": 0
+    },
+    "productNumber": {
+      "type": "number",
+      "default": 1
+    },
+    "isHighlighted": {
+      "type": "boolean",
+      "default": false
+    },
+    "showUpdateLogs": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "supports": {
+    "html": false
+  }
+}

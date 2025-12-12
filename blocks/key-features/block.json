@@ -1,0 +1,27 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "main/key-features",
+  "title": "Key Features",
+  "category": "main",
+  "icon": "star-filled",
+  "description": "Display product key features as badges",
+  "keywords": ["features", "highlights", "badges"],
+  "textdomain": "main",
+  "editorStyle": "file:./editor.css",
+  "style": "file:./style.css",
+  "render": "file:./render.php",
+  "attributes": {
+    "features": {
+      "type": "array",
+      "default": [""]
+    },
+    "heading": {
+      "type": "string",
+      "default": "Key Features"
+    }
+  },
+  "supports": {
+    "html": false
+  }
+}

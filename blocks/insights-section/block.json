@@ -1,0 +1,64 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "main/insights-section",
+  "title": "Insights Section",
+  "category": "main",
+  "icon": "lightbulb",
+  "description": "Display sticky and regular posts from selected categories in a carousel layout",
+  "keywords": ["insights", "posts", "categories", "carousel"],
+  "textdomain": "main",
+  "editorStyle": "file:./editor.css",
+  "style": "file:./style.css",
+  "render": "file:./render.php",
+  "attributes": {
+    "heading": {
+      "type": "string",
+      "default": "Fresh insights to help you make smarter software decisions"
+    },
+    "categories": {
+      "type": "array",
+      "default": []
+    },
+    "stickyLimit": {
+      "type": "number",
+      "default": 3
+    },
+    "regularLimit": {
+      "type": "number",
+      "default": 3
+    },
+    "moveStickyToRight": {
+      "type": "boolean",
+      "default": false
+    },
+    "headingAlign": {
+      "type": "string",
+      "default": "left"
+    },
+    "showButton": {
+      "type": "boolean",
+      "default": false
+    },
+    "buttonText": {
+      "type": "string",
+      "default": "Read More Articles"
+    },
+    "buttonLinkType": {
+      "type": "string",
+      "default": "custom"
+    },
+    "buttonLinkId": {
+      "type": "string",
+      "default": ""
+    },
+    "buttonCustomUrl": {
+      "type": "string",
+      "default": "#"
+    }
+  },
+  "supports": {
+    "html": false,
+    "align": ["wide", "full"]
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "main/pros-cons",
+  "title": "Pros & Cons",
+  "category": "main",
+  "icon": "plus-alt",
+  "description": "Two-column pros and cons comparison",
+  "keywords": ["pros", "cons", "advantages", "disadvantages"],
+  "textdomain": "main",
+  "editorStyle": "file:./editor.css",
+  "style": "file:./style.css",
+  "render": "file:./render.php",
+  "attributes": {
+    "pros": {
+      "type": "array",
+      "default": [""]
+    },
+    "cons": {
+      "type": "array",
+      "default": [""]
+    },
+    "mainHeading": {
+      "type": "string",
+      "default": "Pros & Cons"
+    },
+    "prosHeading": {
+      "type": "string",
+      "default": "PROS"
+    },
+    "consHeading": {
+      "type": "string",
+      "default": "CONS"
+    }
+  },
+  "supports": {
+    "html": false
+  }
+}
