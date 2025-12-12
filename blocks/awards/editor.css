@@ -1,0 +1,20 @@
+/**
+ * Awards Block - Editor Styles
+ * Styles for the awards block in the editor
+ */
+
+/* Override any WordPress core styles that might interfere */
+.editor-styles-wrapper .awards-editor h3,
+.block-editor-block-preview .awards-editor h3 {
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure award images display correctly in editor */
+.editor-styles-wrapper .awards-editor .award-item img,
+.block-editor-block-preview .awards-editor .award-item img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+

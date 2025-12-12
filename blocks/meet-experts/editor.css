@@ -1,0 +1,51 @@
+/* Meet Experts Block - Editor Styles */
+/* Higher specificity wrapper for editor preview */
+
+/* Ensure theme-main wrapper has highest specificity in editor */
+.block-editor-block-preview .theme-main,
+.block-editor-block-list__layout .theme-main,
+.editor-styles-wrapper .theme-main,
+.block-editor-block-list__block .theme-main {
+  /* All styles inherit from main theme stylesheet */
+  /* The .theme-main class provides higher specificity */
+}
+
+/* Meet Experts specific editor styles with higher specificity */
+.theme-main .meet-experts-section {
+  /* All Tailwind utility classes work here */
+  /* Styles are inherited from main theme via dist/style.css */
+}
+
+.theme-main .meet-experts-section * {
+  /* Ensure all child elements inherit styles */
+  box-sizing: border-box;
+}
+
+/* Override any WordPress core styles that might interfere */
+.editor-styles-wrapper .theme-main .meet-experts-section h2,
+.block-editor-block-preview .theme-main .meet-experts-section h2 {
+  margin: 0;
+  padding: 0;
+}
+
+/* Texture background styles for editor */
+.editor-styles-wrapper .theme-main .meet-experts-texture,
+.block-editor-block-preview .theme-main .meet-experts-texture {
+  background-image: var(--texture-mobile);
+}
+
+@media (min-width: 1024px) {
+  .editor-styles-wrapper .theme-main .meet-experts-texture,
+  .block-editor-block-preview .theme-main .meet-experts-texture {
+    background-image: var(--texture-desktop) !important;
+  }
+}
+.meet-experts-carousel .flickity-page-dots {
+  margin-top: -1rem; /* -mt-4 */
+  margin-bottom: 3rem; /* mb-12 */
+}
+@media (min-width: 768px) {
+  .meet-experts-carousel .flickity-page-dots {
+    margin-top: 0.5rem; /* md:mt-2 */
+  }
+}
