@@ -96,6 +96,7 @@ if ( class_exists( 'WP_Customize_Control' ) && ! class_exists( 'Main_Customize_R
 	protected function render_item( $key, $value ) {
 		$image = isset( $value['image'] ) ? $value['image'] : '';
 		$alt   = isset( $value['alt'] ) ? $value['alt'] : '';
+		$url   = isset( $value['url'] ) ? $value['url'] : '';
 		?>
 		<li class="main-repeater-control-item">
 			<div class="main-repeater-control-item-header">
@@ -134,6 +135,12 @@ if ( class_exists( 'WP_Customize_Control' ) && ! class_exists( 'Main_Customize_R
 					<label>
 						<span class="customize-control-title"><?php esc_html_e( 'Alt Text', 'main' ); ?></span>
 						<input type="text" class="main-repeater-alt-text" value="<?php echo esc_attr( $alt ); ?>" placeholder="<?php esc_attr_e( 'Partner name', 'main' ); ?>" />
+					</label>
+				</div>
+				<div class="main-repeater-control-field">
+					<label>
+						<span class="customize-control-title"><?php esc_html_e( 'Link URL', 'main' ); ?></span>
+						<input type="url" class="main-repeater-url" value="<?php echo esc_url( $url ); ?>" placeholder="<?php esc_attr_e( 'https://example.com', 'main' ); ?>" />
 					</label>
 				</div>
 			</div>

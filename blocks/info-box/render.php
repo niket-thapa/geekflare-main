@@ -15,7 +15,7 @@ $heading = $attributes['heading'] ?? '';
 $content = $attributes['content'] ?? '';
 
 // Get container classes based on style
-$container_classes = 'info_box_block flex flex-col justify-center items-start p-5 gap-2 md:gap-3 border border-gray-200 rounded-2xl';
+$container_classes = 'info_box_block flex flex-col justify-center items-start p-5 gap-2 md:gap-3 border border-gray-200 rounded-2xl mb-4 md:mb-6';
 $style_bg_classes = array(
     'default' => 'bg-white',
     'success' => 'bg-success-100',

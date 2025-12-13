@@ -8,6 +8,14 @@
 // Import custom Flickity initialization (Flickity CSS is enqueued separately via functions.php)
 import "./custom-flickity.js";
 
+import PhotoSwipe from "photoswipe";
+import PhotoSwipeLightbox from "photoswipe/lightbox";
+import "photoswipe/style.css";
+
+const lightbox = new PhotoSwipeLightbox({
+  pswpModule: () => import("photoswipe"),
+});
+
 (function () {
   "use strict";
 
@@ -928,6 +936,25 @@ import "./custom-flickity.js";
       resizeTimeout = setTimeout(() => {
         setHeaderFooterHeights();
       }, 100);
+    });
+
+    document.querySelectorAll(".pswp-single").forEach((img) => {
+      img.style.cursor = "pointer";
+
+      img.addEventListener("click", () => {
+        const pswp = new PhotoSwipe({
+          dataSource: [
+            {
+              src: img.dataset.full,
+              width: parseInt(img.dataset.w),
+              height: parseInt(img.dataset.h),
+            },
+          ],
+          index: 0,
+        });
+
+        pswp.init();
+      });
     });
   };
 

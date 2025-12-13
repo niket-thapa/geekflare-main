@@ -362,6 +362,13 @@
                     scoreBreakdown = [];
                   }
 
+                  // Get availability terms from taxonomy (via custom REST field)
+                  var availabilityData =
+                    post.product_availability_data &&
+                    Array.isArray(post.product_availability_data)
+                      ? post.product_availability_data
+                      : [];
+
                   var productDataObj = {
                     id: post.id,
                     name: productName || postTitle,
@@ -371,15 +378,11 @@
                     logo_attachment_id: logoId,
                     website_url: websiteUrl,
                     permalink: postLink,
-                    ai_powered: !!(meta && meta.ai_powered),
-                    open_source: !!(meta && meta.open_source),
-                    has_free_plan: !!(meta && meta.has_free_plan),
-                    has_free_trial: !!(meta && meta.has_free_trial),
-                    has_demo: !!(meta && meta.has_demo),
+                    availability_terms: availabilityData,
                     update_logs: updateLogs,
-                    score_breakdown: scoreBreakdownJson, // Store as JSON string for auto-loading
-                    product_features: [], // Will be populated from taxonomy
-                    features_loaded: false, // Flag to track if features have been loaded
+                    score_breakdown: scoreBreakdownJson,
+                    product_features: [],
+                    features_loaded: false,
                   };
 
                   // Get product features from the REST response (via custom REST field)
@@ -532,12 +535,8 @@
           }, [])
         : null;
 
-      // Track if we've already auto-loaded blocks for this product
-      var hasAutoLoadedState = useState(false);
-      var hasAutoLoaded = hasAutoLoadedState[0];
-      var setHasAutoLoaded = hasAutoLoadedState[1];
-
       // Auto-load sub-blocks when product is selected and product data is loaded
+      // DISABLED: Auto-load feature is disabled
       useEffect(
         function () {
           // Only proceed if we have a product ID, product data is loaded, and we haven't already loaded blocks
@@ -550,8 +549,8 @@
             return;
           }
 
-          // Skip if we've already loaded blocks for this product
-          if (hasAutoLoaded) {
+          // Skip if we've already loaded blocks for this product (using persistent attribute)
+          if (attributes.hasAutoLoadedBlocks) {
             return;
           }
 
@@ -578,7 +577,10 @@
 
           // If all blocks already exist, mark as loaded and return
           if (!needsScoreBreakdown && !needsKeyFeatures && !needsProsCons) {
-            setHasAutoLoaded(true);
+            setAttributes({
+              hasAutoLoadedBlocks: true,
+              autoLoadedForProductId: productId,
+            });
             return;
           }
 
@@ -621,9 +623,7 @@
                 "",
               ]);
             }
-            blocksToInsert.push(
-              wp.blocks.createBlock("main/key-features", keyFeaturesAttrs)
-            );
+            blocksToInsert.push(wp.blocks.createBlock("main/key-features"));
           }
 
           // 3. Pros & Cons (empty) - always add if it doesn't exist
@@ -638,14 +638,20 @@
               try {
                 // Verify wp.blocks is available
                 if (!wp || !wp.blocks || !wp.blocks.createBlock) {
-                  setHasAutoLoaded(true);
+                  setAttributes({
+                    hasAutoLoadedBlocks: true,
+                    autoLoadedForProductId: productId,
+                  });
                   return;
                 }
 
                 // Get current block again to ensure we have the latest state
                 var latestBlock = getBlock(clientId);
                 if (!latestBlock) {
-                  setHasAutoLoaded(true);
+                  setAttributes({
+                    hasAutoLoadedBlocks: true,
+                    autoLoadedForProductId: productId,
+                  });
                   return;
                 }
 
@@ -680,31 +686,49 @@
                   insertBlocks(finalBlocksToInsert, 0, clientId);
                 }
 
-                setHasAutoLoaded(true);
+                setAttributes({
+                  hasAutoLoadedBlocks: true,
+                  autoLoadedForProductId: productId,
+                });
               } catch (e) {
                 // Still mark as loaded to prevent infinite retries
-                setHasAutoLoaded(true);
+                setAttributes({
+                  hasAutoLoadedBlocks: true,
+                  autoLoadedForProductId: productId,
+                });
               }
             }, 1000);
           } else {
-            setHasAutoLoaded(true);
+            setAttributes({
+              hasAutoLoadedBlocks: true,
+              autoLoadedForProductId: productId,
+            });
           }
         },
         [
           productId,
           productData,
           clientId,
-          hasAutoLoaded,
+          attributes.hasAutoLoadedBlocks,
           insertBlocks,
           getBlock,
         ]
       );
 
-      // Reset auto-loaded flag when product changes
+      // Reset auto-loaded flag when product changes to a different product
       useEffect(
         function () {
-          if (productId) {
-            setHasAutoLoaded(false);
+          // Only reset if the product ID has changed to a different product
+          if (
+            productId &&
+            attributes.hasAutoLoadedBlocks &&
+            attributes.autoLoadedForProductId !== productId
+          ) {
+            // Allow the auto-load to run again for the new product
+            setAttributes({
+              hasAutoLoadedBlocks: false,
+              autoLoadedForProductId: 0,
+            });
           }
         },
         [productId]
@@ -1102,7 +1126,7 @@
                   )
                 ),
 
-                // Product Badges
+                // Product Badges - DYNAMIC RENDERING
                 el(
                   "div",
                   {
@@ -1111,130 +1135,74 @@
                   },
                   (function () {
                     var badges = [];
-                    if (!productData) {
+                    if (!productData || !productData.availability_terms) {
                       return badges;
                     }
-                    // Get badge flags directly from product data
-                    var aiPowered = !!productData.ai_powered;
-                    var openSource = !!productData.open_source;
-                    var hasFreePlan = !!productData.has_free_plan;
-                    var hasFreeTrial = !!productData.has_free_trial;
-                    var hasDemo = !!productData.has_demo;
 
-                    // AI-Powered - gradient badge
-                    if (aiPowered) {
-                      badges.push(
-                        el(
-                          "button",
-                          {
-                            type: "button",
-                            key: "ai-powered",
-                            className:
-                              "product-badge product-badge--gradient flex flex-row justify-center items-center gap-2.5 rounded-lg md:rounded-xl",
-                          },
-                          el(
-                            "span",
-                            {
-                              className:
-                                "text-sm md:text-base font-semibold leading-[1.375rem] text-gray-800",
-                            },
-                            "AI-Powered"
-                          )
-                        )
-                      );
-                    }
+                    // Get availability terms from product data
+                    var availabilityData = Array.isArray(
+                      productData.availability_terms
+                    )
+                      ? productData.availability_terms
+                      : [];
 
-                    // Open Source - outline badge
-                    if (openSource) {
-                      badges.push(
-                        el(
-                          "button",
-                          {
-                            type: "button",
-                            key: "open-source",
-                            className:
-                              "product-badge product-badge--outline flex flex-row justify-center items-center py-[0.1875rem] md:py-1.5 px-3 md:px-4 gap-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl",
-                          },
-                          el(
-                            "span",
-                            {
-                              className:
-                                "text-sm md:text-base font-medium leading-[1.375rem] text-gray-800 tracking-2p",
-                            },
-                            "Open Source"
-                          )
-                        )
-                      );
-                    }
+                    // Create badges for each availability term
+                    availabilityData.forEach(function (term) {
+                      var termName = term.name || "";
+                      var termSlug = term.slug || "";
 
-                    // Free Plan
-                    if (hasFreePlan) {
-                      badges.push(
-                        el(
-                          "button",
-                          {
-                            type: "button",
-                            key: "free-plan",
-                            className:
-                              "product-badge product-badge--outline flex flex-row justify-center items-center py-[0.1875rem] md:py-1.5 px-3 md:px-4 gap-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl",
-                          },
-                          el(
-                            "span",
-                            {
-                              className:
-                                "text-sm md:text-base font-medium leading-[1.375rem] text-gray-800 tracking-2p",
-                            },
-                            "Free Plan"
-                          )
-                        )
-                      );
-                    }
+                      if (!termName) {
+                        return; // Skip empty terms
+                      }
 
-                    // Free Trial
-                    if (hasFreeTrial) {
-                      badges.push(
-                        el(
-                          "button",
-                          {
-                            type: "button",
-                            key: "free-trial",
-                            className:
-                              "product-badge product-badge--outline flex flex-row justify-center items-center py-[0.1875rem] md:py-1.5 px-3 md:px-4 gap-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl",
-                          },
-                          el(
-                            "span",
-                            {
-                              className:
-                                "text-sm md:text-base font-medium leading-[1.375rem] text-gray-800 tracking-2p",
-                            },
-                            "Free Trial"
-                          )
-                        )
-                      );
-                    }
+                      // Check if this is a special gradient badge (AI-Powered)
+                      var isGradient =
+                        termSlug === "ai-powered" || termName === "AI-Powered";
 
-                    // Demo
-                    if (hasDemo) {
-                      badges.push(
-                        el(
-                          "button",
-                          {
-                            type: "button",
-                            key: "demo",
-                            className:
-                              "product-badge product-badge--outline flex flex-row justify-center items-center py-[0.1875rem] md:py-1.5 px-3 md:px-4 gap-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl",
-                          },
+                      if (isGradient) {
+                        // Gradient badge style
+                        badges.push(
                           el(
-                            "span",
+                            "button",
                             {
+                              type: "button",
+                              key: termSlug,
                               className:
-                                "text-sm md:text-base font-medium leading-[1.375rem] text-gray-800 tracking-2p",
+                                "product-badge product-badge--gradient flex flex-row justify-center items-center gap-2.5 rounded-lg md:rounded-xl",
                             },
-                            "Demo"
+                            el(
+                              "span",
+                              {
+                                className:
+                                  "text-sm md:text-base font-semibold leading-[1.375rem] text-gray-800",
+                              },
+                              termName
+                            )
                           )
-                        )
-                      );
-                    }
+                        );
+                      } else {
+                        // Outline badge style (default for all other badges)
+                        badges.push(
+                          el(
+                            "button",
+                            {
+                              type: "button",
+                              key: termSlug,
+                              className:
+                                "product-badge product-badge--outline flex flex-row justify-center items-center py-[0.1875rem] md:py-1.5 px-3 md:px-4 gap-2.5 bg-gray-50 border border-gray-200 rounded-lg md:rounded-xl",
+                            },
+                            el(
+                              "span",
+                              {
+                                className:
+                                  "text-sm md:text-base font-medium leading-[1.375rem] text-gray-800 tracking-2p",
+                              },
+                              termName
+                            )
+                          )
+                        );
+                      }
+                    });
 
                     return badges;
                   })()

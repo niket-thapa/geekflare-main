@@ -207,7 +207,7 @@
           });
       }, []);
 
-      // Fetch product data for ratings
+      // Fetch product data for ratings, logos, and descriptions
       useEffect(
         function () {
           products.forEach(function (product) {
@@ -216,14 +216,24 @@
                 path: "/main/v1/product-data/" + product.id,
               })
                 .then(function (data) {
-                  var newCache = Object.assign({}, productDataCache);
-                  newCache[product.id] = data;
-                  setProductDataCache(newCache);
+                  if (data) {
+                    setProductDataCache(function (prevCache) {
+                      var newCache = Object.assign({}, prevCache);
+                      newCache[product.id] = data;
+                      return newCache;
+                    });
+                  }
                 })
-                .catch(function () {
-                  var newCache = Object.assign({}, productDataCache);
-                  newCache[product.id] = null;
-                  setProductDataCache(newCache);
+                .catch(function (error) {
+                  console.error(
+                    "Error fetching product data for ID " + product.id + ":",
+                    error
+                  );
+                  setProductDataCache(function (prevCache) {
+                    var newCache = Object.assign({}, prevCache);
+                    newCache[product.id] = null;
+                    return newCache;
+                  });
                 });
             }
           });
@@ -373,6 +383,20 @@
       // Render badge (number or rating)
       function renderBadge(product, index) {
         var productData = productDataCache[product.id];
+
+        // If data is still loading, show a placeholder
+        if (!productData) {
+          return el(
+            "div",
+            {
+              className:
+                "flex justify-center items-center py-1 px-3.5 bg-gray-100 rounded-full",
+              style: { minWidth: "40px", height: "28px" },
+            },
+            el(Spinner, { style: { width: "16px", height: "16px" } })
+          );
+        }
+
         var rating =
           productData && productData.rating ? productData.rating : null;
 
@@ -518,20 +542,8 @@
           "section",
           {
             id: "honorable-mentions",
-            className: "flex flex-col gap-7 md:gap-8 pb-8 md:pb-12 lg:pb-20",
+            className: "flex flex-col gap-7 md:gap-8 pb-4 md:pb-6",
           },
-          // Heading
-          el(RichText, {
-            tagName: "h2",
-            value: heading,
-            onChange: function (value) {
-              setAttributes({ heading: value });
-            },
-            placeholder: __("Section Heading", "main"),
-            className:
-              "text-2xl md:text-4xl font-bold leading-none text-gray-800 m-0",
-            allowedFormats: [],
-          }),
 
           // Product Search and Selection
           el(
@@ -845,7 +857,7 @@
               )
             : el(
                 "div",
-                { className: "flex flex-col md:grid md:grid-cols-3 gap-4" },
+                { className: "flex flex-col md:grid md:grid-cols-2 gap-4" },
                 products.map(function (product, index) {
                   var productData = productDataCache[product.id];
                   var customNote =
@@ -860,6 +872,9 @@
                     productData && productData.permalink
                       ? productData.permalink
                       : "#";
+
+                  // Check if product data is still loading
+                  var isLoading = !productDataCache[product.id];
 
                   return el(
                     "article",
@@ -892,93 +907,122 @@
                         "×"
                       )
                     ),
-                    // Header with Logo and Badge
-                    el(
-                      "div",
-                      {
-                        className: "flex justify-between items-center gap-4",
-                      },
-                      logo &&
-                        el(
-                          "div",
-                          {
-                            className: "w-8 h-8 [&_img]:w-full [&_img]:h-auto",
+                    // Loading indicator
+                    isLoading &&
+                      el(
+                        "div",
+                        {
+                          style: {
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "8px 0",
                           },
-                          el("img", {
-                            src: logo,
-                            alt: product.name,
-                            width: "32",
-                            height: "32",
-                            loading: "lazy",
-                            class: "m-0",
-                          })
-                        ),
-                      renderBadge(product, index)
-                    ),
+                        },
+                        el(Spinner, {}),
+                        el(
+                          "span",
+                          { style: { fontSize: "12px", color: "#6b7280" } },
+                          __("Loading product data...", "main")
+                        )
+                      ),
+                    // Header with Logo and Badge
+                    !isLoading &&
+                      el(
+                        "div",
+                        {
+                          className: "flex justify-between items-center gap-4",
+                        },
+                        logo
+                          ? el(
+                              "div",
+                              {
+                                className:
+                                  "w-8 h-8 [&_img]:w-full [&_img]:h-auto",
+                              },
+                              el("img", {
+                                src: logo,
+                                alt: product.name,
+                                width: "32",
+                                height: "32",
+                                loading: "lazy",
+                                class: "m-0",
+                              })
+                            )
+                          : el("div", {
+                              className: "w-8 h-8",
+                              style: {
+                                background: "#f3f4f6",
+                                borderRadius: "4px",
+                              },
+                            }),
+                        renderBadge(product, index)
+                      ),
 
                     // Product Info
-                    el(
-                      "div",
-                      { className: "flex flex-col gap-1.5 md:gap-2" },
+                    !isLoading &&
                       el(
-                        "h3",
-                        {
-                          className:
-                            "text-base md:text-xl font-semibold leading-6 md:leading-7 text-gray-800",
-                        },
-                        product.name
-                      ),
-                      customNote &&
+                        "div",
+                        { className: "flex flex-col gap-1.5 md:gap-2" },
                         el(
-                          "div",
+                          "h3",
                           {
                             className:
-                              "text-sm md:text-base font-medium leading-5 md:leading-6 tracking-2p md:tracking-1p text-gray-500 line-clamp-2",
+                              "text-base md:text-xl font-semibold leading-6 md:leading-7 text-gray-800",
                           },
-                          customNote
+                          product.name
                         ),
-                      designType === "top-alternatives" &&
-                        (product.readReviewText || product.readReviewUrl) &&
-                        el(
-                          "a",
-                          {
-                            href: product.readReviewUrl || permalink,
-                            className:
-                              "flex items-center gap-1 text-sm font-semibold leading-5 text-eva-prime-600 hover:text-primary transition-colors",
-                            onClick: function (e) {
-                              e.preventDefault();
-                            },
-                            style: { cursor: "text" },
-                          },
-                          el(RichText, {
-                            tagName: "span",
-                            value: product.readReviewText || "Read Review",
-                            onChange: function (value) {
-                              updateReadReviewText(index, value);
-                            },
-                            allowedFormats: [],
-                            placeholder: __("Read Review", "main"),
-                          }),
+                        customNote &&
                           el(
-                            "svg",
+                            "div",
                             {
-                              className: "w-4 h-4 flex-shrink-0",
-                              xmlns: "http://www.w3.org/2000/svg",
-                              width: "16",
-                              height: "16",
-                              fill: "none",
-                              viewBox: "0 0 16 16",
+                              className:
+                                "text-sm md:text-base font-medium leading-5 md:leading-6 tracking-2p md:tracking-1p text-gray-500 line-clamp-2",
                             },
-                            el("path", {
-                              stroke: "#e84300",
-                              strokeLinecap: "round",
-                              strokeLinejoin: "round",
-                              strokeWidth: "1.5",
-                              d: "M3.333 8h9.333M8.667 12l4-4M8.667 4l4 4",
-                            })
+                            customNote
+                          ),
+                        designType === "top-alternatives" &&
+                          (product.readReviewText || product.readReviewUrl) &&
+                          el(
+                            "a",
+                            {
+                              href: product.readReviewUrl || permalink,
+                              className:
+                                "flex items-center gap-1 text-sm font-semibold leading-5 text-eva-prime-600 hover:text-primary transition-colors",
+                              onClick: function (e) {
+                                e.preventDefault();
+                              },
+                              style: { cursor: "text" },
+                            },
+                            el(RichText, {
+                              tagName: "span",
+                              value: product.readReviewText || "Read Review",
+                              onChange: function (value) {
+                                updateReadReviewText(index, value);
+                              },
+                              allowedFormats: [],
+                              placeholder: __("Read Review", "main"),
+                            }),
+                            el(
+                              "svg",
+                              {
+                                className: "w-4 h-4 flex-shrink-0",
+                                xmlns: "http://www.w3.org/2000/svg",
+                                width: "16",
+                                height: "16",
+                                fill: "none",
+                                viewBox: "0 0 16 16",
+                              },
+                              el("path", {
+                                stroke: "#e84300",
+                                strokeLinecap: "round",
+                                strokeLinejoin: "round",
+                                strokeWidth: "1.5",
+                                d: "M3.333 8h9.333M8.667 12l4-4M8.667 4l4 4",
+                              })
+                            )
                           )
-                        )
-                    )
+                      )
                   );
                 })
               )

@@ -4,6 +4,9 @@
  *
  * Functions for generating dynamic sidebars with auto TOC.
  * Fixed: Skip H3s inside #products, prevent duplicates.
+ * Fixed: Ensure final_verdict gets default title and skips internal headings.
+ * Fixed: IDs starting with numbers now get 'heading-' prefix.
+ * Added: Configurable exclusion classes for TOC generation.
  *
  * @package Main
  * @since 1.0.0
@@ -12,6 +15,144 @@
 // Prevent direct access
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
+}
+
+/**
+ * Sanitize Heading Text to Valid HTML ID
+ *
+ * Converts heading text to a valid HTML ID that doesn't start with a number.
+ * HTML IDs must start with a letter (A-Z, a-z) per HTML specification.
+ *
+ * @since 1.0.0
+ * @param string $text The heading text to sanitize.
+ * @return string Valid HTML ID.
+ */
+function main_sanitize_heading_id( $text ) {
+	// Check if text starts with a number BEFORE sanitization
+	$starts_with_number = preg_match( '/^\s*[0-9]/', $text );
+	
+	// Use WordPress sanitize_title for basic sanitization
+	$id = sanitize_title( $text );
+	
+	// If original text started with a number OR sanitized ID starts with a number, prepend 'heading-'
+	if ( $starts_with_number || preg_match( '/^[0-9]/', $id ) ) {
+		$id = 'heading-' . $id;
+	}
+	
+	// If ID is empty after sanitization, use a fallback
+	if ( empty( $id ) ) {
+		$id = 'heading-' . md5( $text );
+	}
+	
+	return $id;
+}
+
+/**
+ * Get TOC Exclusion Classes
+ *
+ * Returns an array of CSS classes whose containing elements should be
+ * excluded from TOC heading extraction. Headings (H2/H3) inside elements
+ * with these classes will not appear in the table of contents.
+ *
+ * @since 1.0.0
+ * @return array Array of CSS class names to exclude.
+ */
+function main_get_toc_exclusion_classes() {
+	$exclusion_classes = array(
+		'pros-cons',
+		'key-features',
+		'honorable-mentions',
+		'why_trust_us',
+	);
+
+	/**
+	 * Filter the TOC exclusion classes.
+	 *
+	 * Allows plugins/themes to modify the list of CSS classes
+	 * whose headings should be excluded from TOC.
+	 *
+	 * @since 1.0.0
+	 * @param array $exclusion_classes Array of CSS class names.
+	 */
+	return apply_filters( 'main_toc_exclusion_classes', $exclusion_classes );
+}
+
+/**
+ * Get TOC Exclusion IDs
+ *
+ * Returns an array of element IDs whose containing elements should be
+ * excluded from TOC heading extraction.
+ *
+ * @since 1.0.0
+ * @return array Array of element IDs to exclude.
+ */
+function main_get_toc_exclusion_ids() {
+	$exclusion_ids = array(
+		'products', // Already handled, but included for completeness
+		'honorable-mentions', // Added to exclude honorable mentions section by ID
+		// Add more IDs here as needed:
+		// 'another-id',
+	);
+
+	/**
+	 * Filter the TOC exclusion IDs.
+	 *
+	 * Allows plugins/themes to modify the list of element IDs
+	 * whose headings should be excluded from TOC.
+	 *
+	 * @since 1.0.0
+	 * @param array $exclusion_ids Array of element IDs.
+	 */
+	return apply_filters( 'main_toc_exclusion_ids', $exclusion_ids );
+}
+
+/**
+ * Check if Node is Inside Excluded Element
+ *
+ * Helper function to check if a DOM node is inside an element
+ * that should be excluded from TOC generation.
+ *
+ * @since 1.0.0
+ * @param DOMNode $node           The node to check.
+ * @param array   $exclusion_classes Array of CSS classes to exclude.
+ * @param array   $exclusion_ids     Array of element IDs to exclude.
+ * @param array   $custom_block_selectors Custom blocks config array.
+ * @return bool True if node should be excluded, false otherwise.
+ */
+function main_is_node_in_excluded_element( $node, $exclusion_classes, $exclusion_ids, $custom_block_selectors ) {
+	$parent = $node->parentNode;
+	
+	while ( $parent ) {
+		if ( $parent->nodeType === XML_ELEMENT_NODE ) {
+			$parent_class = $parent->getAttribute( 'class' );
+			$parent_id = $parent->getAttribute( 'id' );
+			
+			// Check against exclusion IDs
+			if ( ! empty( $parent_id ) && in_array( $parent_id, $exclusion_ids, true ) ) {
+				return true;
+			}
+			
+			// Check against exclusion classes
+			foreach ( $exclusion_classes as $excluded_class ) {
+				if ( strpos( ' ' . $parent_class . ' ', ' ' . $excluded_class . ' ' ) !== false ) {
+					return true;
+				}
+			}
+			
+			// Check against custom block selectors
+			foreach ( $custom_block_selectors as $selector => $config ) {
+				if ( $config['type'] === 'class' && strpos( ' ' . $parent_class . ' ', ' ' . $selector . ' ' ) !== false ) {
+					return true;
+				}
+				if ( $config['type'] === 'id' && $parent_id === $selector ) {
+					return true;
+				}
+			}
+		}
+		$parent = $parent->parentNode;
+	}
+	
+	return false;
 }
 
 /**
@@ -128,11 +269,13 @@ function main_get_post_headings( $post_id = 0 ) {
 	// Check if this is a buying guide template
 	$is_buying_guide = function_exists( 'main_is_buying_guide_template' ) && main_is_buying_guide_template( $post_id );
 
+	// Get exclusion lists
+	$exclusion_classes = main_get_toc_exclusion_classes();
+	$exclusion_ids = main_get_toc_exclusion_ids();
+
 	// Define custom blocks to look for
 	$custom_block_selectors = array(
-		'why_trust_us'       => array( 'type' => 'class', 'default_text' => 'Why Trust Us' ),
 		'final_verdict'      => array( 'type' => 'class', 'default_text' => 'Final Verdict' ),
-		'honorable-mentions' => array( 'type' => 'id', 'default_text' => 'Honorable Mentions' ),
 	);
 
 	// Only add products with nested items for buying guide template
@@ -177,45 +320,23 @@ function main_get_post_headings( $post_id = 0 ) {
 			continue;
 		}
 
-		// Check if this heading is inside a custom block we handle separately
-		$parent = $heading->parentNode;
-		$should_skip = false;
-		
-		while ( $parent ) {
-			if ( $parent->nodeType === XML_ELEMENT_NODE ) {
-				$parent_class = $parent->getAttribute( 'class' );
-				$parent_id = $parent->getAttribute( 'id' );
-				
-				// Always skip headings inside #products div (regardless of template type)
-				if ( $parent_id === 'products' ) {
-					$should_skip = true;
-					break;
-				}
-				
-				// Skip headings inside custom blocks
-				foreach ( $custom_block_selectors as $selector => $config ) {
-					if ( $config['type'] === 'class' && strpos( $parent_class, $selector ) !== false ) {
-						$should_skip = true;
-						break 2;
-					}
-					if ( $config['type'] === 'id' && $parent_id === $selector ) {
-						$should_skip = true;
-						break 2;
-					}
-				}
-			}
-			$parent = $parent->parentNode;
-		}
+		// Check if this heading is inside an excluded element
+		$should_skip = main_is_node_in_excluded_element(
+			$heading,
+			$exclusion_classes,
+			$exclusion_ids,
+			$custom_block_selectors
+		);
 
-		// Skip if inside custom block or products div
+		// Skip if inside excluded element
 		if ( $should_skip ) {
 			continue;
 		}
 
-		// Get or create ID
+		// Get or create ID using custom sanitization
 		$id = $heading->getAttribute( 'id' );
 		if ( empty( $id ) ) {
-			$id = sanitize_title( $text );
+			$id = main_sanitize_heading_id( $text );
 		}
 
 		// Ensure unique ID
@@ -244,13 +365,25 @@ function main_get_post_headings( $post_id = 0 ) {
 		$config = $data['config'];
 		$position = $data['position'];
 
-		// Find first H2 inside this block for the title
-		$h2 = $xpath->query( './/h2', $block );
-		
-		if ( $h2->length > 0 ) {
-			$heading_text = trim( $h2->item( 0 )->textContent );
-		} else {
+		// For final_verdict, always use default title (don't scan for H2)
+		if ( $selector === 'final_verdict__' ) {
 			$heading_text = $config['default_text'];
+		} else {
+			// Find first H2 inside this block for the title
+			$h2 = $xpath->query( './/h2', $block );
+			
+			// Initialize heading text
+			$heading_text = '';
+			
+			// Use H2 text if it exists
+			if ( $h2->length > 0 ) {
+				$heading_text = trim( $h2->item( 0 )->textContent );
+			}
+			
+			// If no H2 found or H2 is empty, use default text from config
+			if ( empty( $heading_text ) ) {
+				$heading_text = $config['default_text'];
+			}
 		}
 
 		// Get or create ID for the block
@@ -323,10 +456,10 @@ function main_get_product_items( $dom, $xpath ) {
 			$h3 = $h3_elements->item( 0 );
 			$product_name = trim( $h3->textContent );
 
-			// Get or create ID
+			// Get or create ID using custom sanitization
 			$product_id = $h3->getAttribute( 'id' );
 			if ( empty( $product_id ) ) {
-				$product_id = sanitize_title( $product_name );
+				$product_id = main_sanitize_heading_id( $product_name );
 			}
 
 			$products[] = array(
@@ -371,7 +504,7 @@ function main_add_heading_ids( $content ) {
 		if ( ! $heading->hasAttribute( 'id' ) ) {
 			$text = trim( $heading->textContent );
 			if ( ! empty( $text ) ) {
-				$id = sanitize_title( $text );
+				$id = main_sanitize_heading_id( $text );
 				$base_id = $id;
 				$counter = 1;
 				
@@ -423,7 +556,7 @@ function main_add_heading_ids( $content ) {
 		if ( ! $h3->hasAttribute( 'id' ) ) {
 			$text = trim( $h3->textContent );
 			if ( ! empty( $text ) ) {
-				$id = sanitize_title( $text );
+				$id = main_sanitize_heading_id( $text );
 				$base_id = $id;
 				$counter = 1;
 				

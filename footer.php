@@ -10,9 +10,9 @@
 <footer id="site-footer" class="site-footer bg-gray-100 border-t border-gray-200 pt-12 pb-6 lg:pt-20">
 	<div class="container-1056">
 		<div class="footer-content flex flex-col gap-12">
-			<!-- Logo and Menu Section -->
+			<?php // Logo and Menu Section ?>
 			<div class="footer-top flex flex-col gap-14 md:grid md:grid-cols-[40%_1fr] lg:grid-cols-[34.7%_1fr] xl:gap-16">
-				<!-- Logo -->
+				<?php // Logo ?>
 				<div class="flex items-start">
 					<?php
 					$footer_logo = get_theme_mod( 'footer_logo', '' );
@@ -30,9 +30,9 @@
 					?>
 				</div>
 
-				<!-- Menu Sections -->
+				<?php // Menu Sections ?>
 				<div class="footer-menus flex flex-col md:row-span-2">
-					<!-- First Row: COMPANY, LEGAL, GENERAL, PRODUCTS -->
+					<?php // First Row: COMPANY, LEGAL, GENERAL, PRODUCTS ?>
 					<div class="footer-menu-row flex flex-row gap-y-14 gap-x-[4.5rem] flex-wrap lg:gap-x-10 lg:justify-between">
 						<?php
 						// Company Menu Widget
@@ -58,7 +58,7 @@
 					</div>
 				</div>
 
-				<!-- Email Button -->
+				<?php // Email Button ?>
 				<div class="footer-email -mt-2.5 md:mt-auto flex">
 					<?php
 					$footer_email = get_theme_mod( 'footer_email', 'info@example.com' );
@@ -76,14 +76,14 @@
 				</div>
 			</div>
 
-			<!-- Divider and Social Section -->
+			<?php // Divider and Social Section ?>
 			<div class="footer-bottom flex flex-col gap-6">
-				<!-- Divider -->
+				<?php // Divider ?>
 				<div class="footer-divider border-t border-[#D5D7DA]"></div>
 
-				<!-- Social Icons and Copyright -->
+				<?php // Social Icons and Copyright ?>
 				<div class="footer-social-copyright flex flex-col gap-6 lg:flex-row-reverse lg:items-center lg:justify-between">
-					<!-- Social Icons -->
+					<?php // Social Icons ?>
 					<div class="flex flex-row items-center gap-0">
 						<?php
 						$social_networks = array( 'twitter', 'linkedin', 'youtube' );
@@ -131,7 +131,7 @@
 						?>
 					</div>
 
-					<!-- Copyright -->
+					<?php // Copyright ?>
 					<div class="text-sm font-medium text-gray-500 leading-5 tracking-2p lg:tracking-1p">
 						<?php
 						$copyright = get_theme_mod( 'footer_copyright_text', '© ' . date( 'Y' ) . ' Geekflare. All rights reserved. Geekflare&reg; is a registered trademark.' );
@@ -151,7 +151,7 @@
 	</div>
 </footer>
 
-</div><!-- #page -->
+</div><?php // #page ?>
 
 <?php wp_footer(); ?>
 

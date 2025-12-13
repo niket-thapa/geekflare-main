@@ -23,7 +23,7 @@ $headings = main_get_post_headings( $post_id );
 	<aside class="table-of-contents info-sidebar w-full border border-gray-200 rounded-xl overflow-hidden flex flex-col lg:sticky lg:start-0 lg:top-20">
 	
 		<?php if ( $show_toc && ! empty( $headings ) ) : ?>
-		<!-- Table of Content Header -->
+		<?php // Table of Content Header ?>
 		<btn
 			type="btn"
 			class="toc-header flex items-center justify-between px-4 py-[0.8125rem] md:py-3.5 gap-3 w-full bg-gray-50 border-b border-gray-200 transition-colors"
@@ -47,7 +47,7 @@ $headings = main_get_post_headings( $post_id );
 			</svg>
 		</btn>
 	
-		<!-- Table of Content Content (Auto-generated with custom blocks) -->
+		<?php // Table of Content Content (Auto-generated with custom blocks) ?>
 		<nav
 			id="toc-content"
 			class="toc-content accordion-panel flex flex-col"
@@ -57,7 +57,7 @@ $headings = main_get_post_headings( $post_id );
 				<?php foreach ( $headings as $index => $heading ) : ?>
 	
 					<?php if ( 2 === $heading['level'] ) : ?>
-						<!-- H2 Level Items -->
+						<?php // H2 Level Items ?>
 						<a
 							href="#<?php echo esc_attr( $heading['id'] ); ?>"
 							class="toc-item <?php echo 0 === $index ? 'toc-item--active' : ''; ?> block px-3 py-2.5 gap-2 rounded-lg <?php echo 0 === $index ? 'bg-eva-prime-50' : 'bg-gray-50'; ?> text-sm <?php echo 0 === $index ? 'font-semibold' : 'font-medium'; ?> text-gray-800 transition-colors"
@@ -66,7 +66,7 @@ $headings = main_get_post_headings( $post_id );
 						</a>
 	
 					<?php elseif ( 3 === $heading['level'] ) : ?>
-						<!-- H3 Level Items (indented) -->
+						<?php // H3 Level Items (indented) ?>
 						<a
 							href="#<?php echo esc_attr( $heading['id'] ); ?>"
 							class="toc-item block px-3 py-2.5 gap-2 rounded-lg bg-gray-50 text-sm font-medium text-gray-800 transition-colors"
@@ -83,7 +83,7 @@ $headings = main_get_post_headings( $post_id );
 	</aside>
 	
 	<?php if ( ! empty( $custom_html ) ) : ?>
-	<!-- Custom HTML Section -->
+	<?php // Custom HTML Section ?>
 	<div class="custom-html-section mt-5">
 		<div class="p-4">
 			<div class="custom-html-content text-sm text-gray-800 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_a]:text-blue-600 [&_a]:underline [&_h1]:text-base [&_h1]:font-bold [&_h1]:mb-2 [&_h2]:text-base [&_h2]:font-bold [&_h2]:mb-2 [&_h3]:text-sm [&_h3]:font-bold [&_h3]:mb-2">

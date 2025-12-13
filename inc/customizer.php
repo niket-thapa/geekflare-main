@@ -304,7 +304,7 @@ function main_customize_register( $wp_customize ) {
 			'partners_logos',
 			array(
 				'label'       => __( 'Partner Logos', 'main' ),
-				'description' => __( 'Add, remove, and reorder partner logos. Each partner needs an image and alt text.', 'main' ),
+				'description' => __( 'Add, remove, and reorder partner logos. Each partner needs an image, alt text, and optionally a link URL.', 'main' ),
 				'section'     => 'partners_settings',
 				'button_label' => __( 'Add Partner', 'main' ),
 			)
@@ -379,11 +379,13 @@ function main_sanitize_partners_logos( $value ) {
 		
 		$image = isset( $partner['image'] ) ? esc_url_raw( $partner['image'] ) : '';
 		$alt   = isset( $partner['alt'] ) ? sanitize_text_field( $partner['alt'] ) : '';
+		$url   = isset( $partner['url'] ) ? esc_url_raw( $partner['url'] ) : '';
 		
 		// Save all items (even without images) so repeater works properly
 		$sanitized[] = array(
 			'image' => $image,
 			'alt'   => $alt,
+			'url'   => $url,
 		);
 	}
 	

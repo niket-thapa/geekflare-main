@@ -255,6 +255,25 @@ function main_enqueue_block_editor_assets() {
 		true
 	);
 
+	// Enqueue heading number style extension
+	$heading_extension_path = get_stylesheet_directory() . '/src/js/heading-number-style.js';
+	if ( file_exists( $heading_extension_path ) ) {
+		wp_enqueue_script(
+			'main-heading-number-style',
+			get_stylesheet_directory_uri() . '/src/js/heading-number-style.js',
+			array(
+				'wp-blocks',
+				'wp-element',
+				'wp-block-editor',
+				'wp-components',
+				'wp-i18n',
+				'wp-hooks',
+			),
+			filemtime( $heading_extension_path ),
+			false // Load in header for block editor
+		);
+	}
+
 
 	// Add inline style to ensure theme-main class has highest specificity
 	wp_add_inline_style(
@@ -351,6 +370,21 @@ function main_enqueue_block_editor_assets() {
 		.block-editor-block-preview .site-main .wp-block-pullquote blockquote cite:before {
 			content: "—";
 		}
+		
+		/* Heading Number Style - Editor */
+		.editor-styles-wrapper .has_number_style::before,
+		.block-editor-block-preview .has_number_style::before,
+		.block-editor-block-list__layout .has_number_style::before {
+			content: attr(data-number);
+			width: 1.25em;
+			aspect-ratio: 1 / 1;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			background-color: #FF4A00;
+			color: #ffffff;
+			margin-right: 0.625rem;
+		}
 	'
 	);
 
@@ -381,6 +415,26 @@ function main_enqueue_block_editor_assets() {
 			.editor-styles-wrapper {
 				font-size: 1rem;
 			}
+		}
+
+		.schema-faq-section .schema-faq-question {
+			display: block !important;
+			position: relative;
+		}
+
+		.schema-faq-section .schema-faq-question:after {
+			position: absolute;
+			inset-inline-end: 0;
+		}
+
+		.buying_guide_item {
+			margin-bottom: 50px;
+		}
+
+		.buying_guide_item .product-score-breakdown,
+		.buying_guide_item .key-features,
+		.buying_guide_item .pros-cons {
+			margin-bottom: 30px;
 		}
 		
 		/* Paragraphs */

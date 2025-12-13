@@ -137,7 +137,7 @@
     @apply bg-white;
   }
 
-  .product-compare-table th:first-child::after,
+  /* .product-compare-table th:first-child::after,
   .product-compare-table td:first-child::after {
     content: "";
     position: absolute;
@@ -151,7 +151,7 @@
       rgba(15, 23, 42, 0.05) 0%,
       rgba(255, 255, 255, 0) 100%
     );
-  }
+  } */
 
   .product-compare-table th:last-child,
   .product-compare-table td:last-child {
@@ -163,7 +163,7 @@
     @apply md:bg-white;
   }
 
-  @media (min-width: 768px) {
+  /* @media (min-width: 768px) {
     .product-compare-table th:last-child::before,
     .product-compare-table td:last-child::before {
       content: "";
@@ -179,7 +179,7 @@
         rgba(255, 255, 255, 0) 100%
       );
     }
-  }
+  } */
 
   .product-compare-table tbody tr:not(:last-child) th,
   .product-compare-table tbody tr:not(:last-child) td {
@@ -623,7 +623,7 @@
     @apply lg:absolute lg:right-0 lg:top-1/2 lg:-translate-y-1/2 lg:translate-x-4 lg:origin-right flex items-center gap-2 rounded-2xl lg:rounded-full border border-gray-200 bg-white px-3 py-1.5 lg:shadow-lg lg:shadow-gray-900/10 lg:w-[min(23rem,75vw)] lg:opacity-0 lg:pointer-events-none lg:scale-95 transition duration-200 ease-out;
   }
 
-  .search-form {
+  .main-search-form {
     @apply flex items-center gap-2 rounded-2xl lg:rounded-full border border-gray-200 bg-white px-3 py-1.5 lg:shadow-lg lg:shadow-gray-900/10;
   }
 
@@ -1783,11 +1783,6 @@ body.archive:not(.single-post-page) {
   @apply my-8;
 }
 
-/* Image Styling */
-.prose :where(img):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-  @apply rounded-xl w-full h-auto;
-}
-
 .prose
   :where(img):not(:where([class~="not-prose"], [class~="not-prose"] *)):not(
     [class*="m-0"]
@@ -2009,7 +2004,7 @@ body.archive:not(.single-post-page) {
 /* Enhanced Figure Styling for Multiple Image Types */
 .prose
   :where(figure img):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-  @apply rounded-xl w-full h-auto;
+  @apply w-full h-auto;
 }
 
 .prose
@@ -2027,10 +2022,29 @@ body.archive:not(.single-post-page) {
 .buying_guide_item p,
 .buying_guide_item ul,
 .buying_guide_item ol,
+.buying_guide_item figure.wp-block-image,
+.buying_guide_item figure.wp-block-image img,
 .buying_guide_item figure.wp-block-table {
   margin-block: 0 !important;
 }
 
 .buying_guide_item figure.wp-block-table table {
   margin-block: 1px !important;
+}
+
+.honorable-mention-item:hover .honorable-mention-item__text {
+  -webkit-line-clamp: none;
+}
+
+.has_number_style:before {
+  @apply content-[attr(data-number)] w-[1.25em] aspect-square inline-flex items-center justify-center bg-primary text-white me-2.5;
+}
+
+/* TOC Item Styles */
+.toc-item:not(.toc-item--active) {
+  @apply bg-gray-50 font-medium;
+}
+
+.toc-item--active {
+  @apply bg-eva-prime-50 font-semibold;
 }

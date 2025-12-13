@@ -7,7 +7,7 @@
  */
 ?>
 
-<form role="search" method="get" class="search-form mx-auto max-w-xl w-full" action="<?php echo esc_url( home_url( '/' ) ); ?>">
+<form role="search" method="get" class="main-search-form mx-auto max-w-xl w-full" action="<?php echo esc_url( home_url( '/' ) ); ?>">
 	<label class="sr-only">
 		<span class="screen-reader-text"><?php esc_html_e( 'Search for:', 'main' ); ?></span>
 	</label>

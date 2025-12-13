@@ -64,7 +64,7 @@
 									<path d="M11 18a7.001 7.001 0 1 0 0-14.002A7.001 7.001 0 0 0 11 18m9 2-4-4" style="fill:none;stroke:#252b37;stroke-linecap:round;stroke-linejoin:round;stroke-width:1.8"/>
 								</svg>
 							</button>
-							<form class="search-form header-search__form" role="search" method="get" action="<?php echo esc_url( home_url( '/' ) ); ?>" aria-hidden="true">
+							<form class="main-search-form header-search__form" role="search" method="get" action="<?php echo esc_url( home_url( '/' ) ); ?>" aria-hidden="true">
 								<label for="header-search-input" class="sr-only"><?php esc_html_e( 'Search', 'main' ); ?></label>
 								<input 
 									id="header-search-input" 

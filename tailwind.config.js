@@ -426,6 +426,7 @@ module.exports = {
               {
                 color: theme("primary"),
                 textDecoration: "none",
+                fontWeight: "inherit",
               },
             ":where(li):not(:where([class~=not-prose],[class~=not-prose] *))": {
               marginTop: "0",

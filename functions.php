@@ -105,6 +105,13 @@ require_once MAIN_THEME_DIR . '/inc/customizer.php';
  */
 require_once MAIN_THEME_DIR . '/inc/blocks.php';
 
+/**
+ * Heading Number Style Extension
+ *
+ * Extends core heading block with number style option.
+ */
+require_once MAIN_THEME_DIR . '/inc/heading-number-style.php';
+
 // ============================================================================
 // Template Functions
 // ============================================================================
@@ -203,3 +210,57 @@ require_once MAIN_THEME_DIR . '/inc/custom-author-url.php';
  * Widget areas for buying guide and info sidebars.
  */
 require_once MAIN_THEME_DIR . '/inc/sidebar-widgets.php';
+
+/**
+ * Add PhotoSwipe attributes to WordPress block images
+ */
+function add_photoswipe_attributes_to_block_images($block_content, $block) {
+    // Check if this is an image block
+    if ($block['blockName'] !== 'core/image') {
+        return $block_content;
+    }
+    
+    // Load the HTML content
+    $dom = new DOMDocument();
+    @$dom->loadHTML(mb_convert_encoding($block_content, 'HTML-ENTITIES', 'UTF-8'), LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    
+    // Find the img tag
+    $images = $dom->getElementsByTagName('img');
+    
+    if ($images->length > 0) {
+        $img = $images->item(0);
+        
+        // Get the attachment ID from the class
+        $class = $img->getAttribute('class');
+        preg_match('/wp-image-(\d+)/', $class, $matches);
+        
+        if (isset($matches[1])) {
+            $attachment_id = $matches[1];
+            
+            // Get the full size image
+            $full_image = wp_get_attachment_image_src($attachment_id, 'full');
+            
+            if ($full_image) {
+                // Add pswp-single class
+                $existing_class = $img->getAttribute('class');
+                $img->setAttribute('class', $existing_class . ' pswp-single');
+                
+                // Add data-full attribute (full size image URL)
+                $img->setAttribute('data-full', $full_image[0]);
+                
+                // Add data-w attribute (full size width)
+                $img->setAttribute('data-w', $full_image[1]);
+                
+                // Add data-h attribute (full size height)
+                $img->setAttribute('data-h', $full_image[2]);
+            }
+        }
+        
+        // Save the modified HTML
+        $block_content = $dom->saveHTML();
+    }
+    
+    return $block_content;
+}
+
+add_filter('render_block', 'add_photoswipe_attributes_to_block_images', 10, 2);

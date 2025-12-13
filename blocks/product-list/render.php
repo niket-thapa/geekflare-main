@@ -8,7 +8,7 @@
  */
 
 $show_product_number = isset( $attributes['showProductNumber'] ) ? (bool) $attributes['showProductNumber'] : true;
-$wrapper_class = 'flex flex-col gap-7.5 pb-8 md:pb-12 lg:pb-20';
+$wrapper_class = 'flex flex-col gap-7.5 pb-3 md:pb-4';
 if ( ! $show_product_number ) {
     $wrapper_class .= ' hide-product-numbers';
 }

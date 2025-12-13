@@ -57,6 +57,10 @@
         self.updateInputValue();
       });
 
+      $("body").on("input", ".main-repeater-url", function () {
+        self.updateInputValue();
+      });
+
       this.initialized = true;
     },
 
@@ -85,6 +89,12 @@
         "<label>" +
         '<span class="customize-control-title">Alt Text</span>' +
         '<input type="text" class="main-repeater-alt-text" value="" placeholder="Partner name" />' +
+        "</label>" +
+        "</div>" +
+        '<div class="main-repeater-control-field">' +
+        "<label>" +
+        '<span class="customize-control-title">Link URL</span>' +
+        '<input type="url" class="main-repeater-url" value="" placeholder="https://example.com" />' +
         "</label>" +
         "</div>" +
         "</div>" +
@@ -249,14 +259,19 @@
               var altInput = itemEl.querySelector(
                 "input.main-repeater-alt-text"
               );
+              var urlInput = itemEl.querySelector(
+                "input.main-repeater-url"
+              );
 
               var image =
                 imageInput && imageInput.value ? imageInput.value.trim() : "";
               var alt = altInput && altInput.value ? altInput.value.trim() : "";
+              var url = urlInput && urlInput.value ? urlInput.value.trim() : "";
 
               items.push({
                 image: image,
                 alt: alt,
+                url: url,
               });
 
               // Update title

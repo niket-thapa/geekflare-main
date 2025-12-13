@@ -14,7 +14,7 @@
   "attributes": {
     "heading": {
       "type": "string",
-      "default": "Final Verdict: Who is Monday.com for?"
+      "default": "Final Verdict"
     },
     "perfectForHeading": {
       "type": "string",
@@ -37,4 +37,3 @@
     "html": false
   }
 }
-

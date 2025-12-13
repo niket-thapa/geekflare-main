@@ -50,16 +50,8 @@ foreach ( $author_ids as $author_id ) {
 		continue;
 	}
 
-	// Get post count
-	$post_count = count_user_posts( $author_id, 'post', true );
-
-	// Get registered date
-	$registered_date = $author->user_registered;
-	$formatted_date = '';
-	if ( $registered_date ) {
-		$timestamp = strtotime( $registered_date );
-		$formatted_date = date( 'F j, Y', $timestamp );
-	}
+	// Get author job title
+	$job_title = main_get_author_job_title( $author_id );
 
 	// Get author bio
 	$bio = get_user_meta( $author_id, 'description', true );
@@ -79,8 +71,7 @@ foreach ( $author_ids as $author_id ) {
 		'id'            => $author_id,
 		'name'          => $display_name,
 		'bio'           => $bio,
-		'post_count'    => $post_count,
-		'registered'    => $formatted_date,
+		'job_title'     => $job_title,
 		'archive_url'   => $archive_url,
 	);
 }
@@ -154,27 +145,7 @@ $texture_desktop_url = main_get_image_url( 'texture-desktop.svg' );
 											<?php echo esc_html( $author['name'] ); ?>
 										</h3>
 										<div class="text-xs md:text-sm font-medium text-gray-500 tracking-2p md:tracking-1p">
-											<?php
-											// Format the meta text: "Wrote 179 articles since October 24, 2015"
-											if ( $author['post_count'] > 0 && ! empty( $author['registered'] ) ) {
-												printf(
-													esc_html__( 'Wrote %1$d article%2$s since %3$s', 'main' ),
-													$author['post_count'],
-													$author['post_count'] === 1 ? '' : 's',
-													$author['registered']
-												);
-											} elseif ( $author['post_count'] > 0 ) {
-												printf(
-													esc_html( _n( 'Wrote %d article', 'Wrote %d articles', $author['post_count'], 'main' ) ),
-													$author['post_count']
-												);
-											} elseif ( ! empty( $author['registered'] ) ) {
-												printf(
-													esc_html__( 'Member since %s', 'main' ),
-													$author['registered']
-												);
-											}
-											?>
+											<?php echo esc_html( $author['job_title'] ); ?>
 										</div>
 									</div>
 								</div>

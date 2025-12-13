@@ -124,3 +124,26 @@ function main_get_author_job_title( $user_id = null ) {
 	return $role_display_name;
 }
 
+/**
+ * Expose job_title meta field in REST API for users.
+ *
+ * @since 1.0.0
+ */
+function main_register_user_job_title_rest_field() {
+	register_rest_field(
+		'user',
+		'job_title',
+		array(
+			'get_callback' => function( $user ) {
+				return get_user_meta( $user['id'], 'job_title', true );
+			},
+			'schema' => array(
+				'description' => __( 'User job title', 'main' ),
+				'type'        => 'string',
+				'context'     => array( 'view', 'edit' ),
+			),
+		)
+	);
+}
+add_action( 'rest_api_init', 'main_register_user_job_title_rest_field' );
+

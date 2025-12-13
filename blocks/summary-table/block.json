@@ -27,10 +27,14 @@
     "lastColumnConfig": {
       "type": "object",
       "default": {
-        "buttonText": "Try Now",
+        "buttonText": "Explore",
         "urlSource": "affiliate",
         "customUrl": ""
       }
+    },
+    "productColumnLabel": {
+      "type": "string",
+      "default": "Product"
     }
   },
   "supports": {

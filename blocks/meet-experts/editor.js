@@ -370,35 +370,8 @@
                         // Get author bio
                         var bio = author.description || "";
 
-                        // Get post count (we'll need to fetch this in PHP)
-                        var postCount = 0; // Will be set in PHP
-
-                        // Get registered date
-                        var registeredDate = author.registered || "";
-                        var formattedDate = "";
-                        if (registeredDate) {
-                          var date = new Date(registeredDate);
-                          var months = [
-                            "January",
-                            "February",
-                            "March",
-                            "April",
-                            "May",
-                            "June",
-                            "July",
-                            "August",
-                            "September",
-                            "October",
-                            "November",
-                            "December",
-                          ];
-                          formattedDate =
-                            months[date.getMonth()] +
-                            " " +
-                            date.getDate() +
-                            ", " +
-                            date.getFullYear();
-                        }
+                        // Get author job title from REST API field
+                        var jobTitle = author.job_title || "";
 
                         // Author archive URL
                         var archiveUrl = "#"; // Will be set in PHP render
@@ -435,13 +408,14 @@
                                 },
                                 authorName
                               ),
+                              jobTitle &&
                               el(
                                 "div",
                                 {
                                   className:
                                     "text-xs md:text-sm font-medium text-gray-500 tracking-2p md:tracking-1p",
                                 },
-                                __("Author info", "main")
+                                jobTitle
                               )
                             )
                           ),

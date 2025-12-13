@@ -156,6 +156,17 @@ function main_scripts() {
 				true
 			);
 		}
+
+		// photoswipe CSS for date range picker
+		$photoswipe_css_path = get_stylesheet_directory() . '/dist/photoswipe.css';
+		if ( file_exists( $photoswipe_css_path ) ) {
+			wp_enqueue_style(
+				'photoswipe',
+				get_stylesheet_directory_uri() . '/dist/photoswipe.css',
+				array(),
+				filemtime( $photoswipe_css_path )
+			);
+		}
 	}
 }
 // Priority 999 ensures our styles load AFTER WordPress core styles (which load at priority 10)

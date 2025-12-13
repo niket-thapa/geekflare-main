@@ -50,14 +50,33 @@ if ( $show_filters ) {
 	}
 }
 
+// Get all Availability terms (only if filters are enabled)
+$availability_terms = array();
+if ( $show_filters ) {
+	$availability_terms = get_terms(
+		array(
+			'taxonomy'   => MAIN_PRODUCTS_AVAILABILITY_TAXONOMY,
+			'hide_empty' => true,
+			'orderby'    => 'name',
+			'order'      => 'ASC',
+		)
+	);
+	if ( is_wp_error( $availability_terms ) ) {
+		$availability_terms = array();
+	}
+}
+
+// Combine availability terms with features terms
+$combined_features_terms = array_merge( $availability_terms, $features_terms );
+
 $features_limit = 10;
-$has_more_features = count( $features_terms ) > $features_limit;
+$has_more_features = count( $combined_features_terms ) > $features_limit;
 ?>
 <div class="lg:sticky lg:start-0 lg:top-20">
 	<aside class="table-of-contents w-full border border-gray-200 rounded-xl overflow-hidden flex flex-col">
 	
 		<?php if ( $show_toc && ! empty( $headings ) ) : ?>
-		<!-- Table of Content Header -->
+		<?php // Table of Content Header ?>
 		<button
 			type="button"
 			class="toc-header flex items-center justify-between px-4 py-[0.8125rem] md:py-3.5 gap-3 w-full bg-gray-50 border-b border-gray-200 transition-colors"
@@ -81,7 +100,7 @@ $has_more_features = count( $features_terms ) > $features_limit;
 			</svg>
 		</button>
 	
-		<!-- Table of Content Content -->
+		<?php // Table of Content Content ?>
 		<nav
 			id="toc-content"
 			class="toc-content accordion-panel flex flex-col"
@@ -91,16 +110,16 @@ $has_more_features = count( $features_terms ) > $features_limit;
 				<?php foreach ( $headings as $index => $heading ) : ?>
 	
 					<?php if ( 2 === $heading['level'] ) : ?>
-						<!-- H2 Level Items -->
+						<?php // H2 Level Items ?>
 						
 						<a href="#<?php echo esc_attr( $heading['id'] ); ?>"
-							class="toc-item <?php echo 0 === $index ? 'toc-item--active' : ''; ?> block px-3 py-2.5 gap-2 rounded-lg <?php echo 0 === $index ? 'bg-eva-prime-50' : 'bg-gray-50'; ?> text-sm <?php echo 0 === $index ? 'font-semibold' : 'font-medium'; ?> text-gray-800 transition-colors"
+							class="toc-item <?php echo 0 === $index ? 'toc-item--active' : ''; ?> block px-3 py-2.5 gap-2 rounded-lg text-sm text-gray-800 transition-colors"
 							data-heading-id="<?php echo esc_attr( $heading['id'] ); ?>">
 							<span><?php echo esc_html( $heading['text'] ); ?></span>
 						</a>
 	
 						<?php if ( ! empty( $heading['children'] ) ) : ?>
-							<!-- Nested Products -->
+							<?php // Nested Products ?>
 							<div class="toc-nested ms-6 border-l border-gray-200 flex flex-col">
 								<?php foreach ( $heading['children'] as $child_index => $child ) : ?>
 									
@@ -115,7 +134,7 @@ $has_more_features = count( $features_terms ) > $features_limit;
 						<?php endif; ?>
 	
 					<?php elseif ( 3 === $heading['level'] ) : ?>
-						<!-- H3 Level Items -->
+						<?php // H3 Level Items ?>
 						
 						<a href="#<?php echo esc_attr( $heading['id'] ); ?>"
 							class="toc-item block px-3 py-2.5 gap-2 rounded-lg bg-gray-50 text-sm font-medium text-gray-800 transition-colors"
@@ -130,7 +149,7 @@ $has_more_features = count( $features_terms ) > $features_limit;
 		<?php endif; ?>
 	
 		<?php if ( $show_filters ) : ?>
-		<!-- Filter Header -->
+		<?php // Filter Header ?>
 		<button
 			type="button"
 			class="filter-header flex items-center justify-between px-4 py-[0.8125rem] md:py-3.5 gap-3 w-full bg-gray-50 transition-colors"
@@ -154,11 +173,11 @@ $has_more_features = count( $features_terms ) > $features_limit;
 			</svg>
 		</button>
 	
-		<!-- Filter Content -->
+		<?php // Filter Content ?>
 		<form id="filter-content" class="filter-content accordion-panel block" role="region" aria-live="polite">
 			<div class="accordion-panel__inner flex flex-col gap-6 p-4">
 	
-				<!-- Pricing Section -->
+				<?php // Pricing Section ?>
 				<div class="filter-group flex flex-col gap-3">
 					<div class="filter-group__label text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500">
 						<?php esc_html_e( 'Pricing', 'main' ); ?>
@@ -167,10 +186,6 @@ $has_more_features = count( $features_terms ) > $features_limit;
 						<label class="filter-option">
 							<input type="radio" name="pricing" value="all" checked />
 							<span><?php esc_html_e( 'All', 'main' ); ?></span>
-						</label>
-						<label class="filter-option">
-							<input type="radio" name="pricing" value="free" />
-							<span><?php esc_html_e( 'Free', 'main' ); ?></span>
 						</label>
 						<label class="filter-option">
 							<input type="radio" name="pricing" value="0-10" />
@@ -187,7 +202,7 @@ $has_more_features = count( $features_terms ) > $features_limit;
 					</div>
 				</div>
 	
-				<!-- Best Suited For Section -->
+				<?php // Best Suited For Section ?>
 				<?php if ( ! empty( $best_suited_terms ) ) : ?>
 				<div class="filter-group flex flex-col gap-3">
 					<div class="filter-group__label text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500">
@@ -204,16 +219,16 @@ $has_more_features = count( $features_terms ) > $features_limit;
 				</div>
 				<?php endif; ?>
 	
-				<!-- Features Section -->
-				<?php if ( ! empty( $features_terms ) ) : ?>
+				<?php // Features Section (Combined with Availability) ?>
+				<?php if ( ! empty( $combined_features_terms ) ) : ?>
 				<div class="filter-group flex flex-col gap-3">
 					<div class="filter-group__label text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-500">
 						<?php esc_html_e( 'Features', 'main' ); ?>
 					</div>
 					<div class="flex flex-col gap-3" id="features-list">
 						<?php 
-						$visible_features = array_slice( $features_terms, 0, $features_limit );
-						$hidden_features = array_slice( $features_terms, $features_limit );
+						$visible_features = array_slice( $combined_features_terms, 0, $features_limit );
+						$hidden_features = array_slice( $combined_features_terms, $features_limit );
 						?>
 						
 						<?php foreach ( $visible_features as $term ) : ?>
@@ -243,14 +258,14 @@ $has_more_features = count( $features_terms ) > $features_limit;
 				</div>
 				<?php endif; ?>
 
-				<!-- Clear Filters Button -->
+				<?php // Clear Filters Button ?>
 				<div class="btn_clear_wrap pt-4" style="display: none;">
 					<button type="reset" class="btn btn--primary btn--small w-full rounded-full">
 						<?php esc_html_e( 'Clear Filters', 'main' ); ?>
 					</button>
 				</div>
 
-				<!-- Results Count -->
+				<?php // Results Count ?>
 				<div class="filter-results-count text-sm text-gray-600 pt-2 border-t border-gray-200" style="display: none;">
 					<span id="results-count">0</span> <?php esc_html_e( 'products found', 'main' ); ?>
 				</div>

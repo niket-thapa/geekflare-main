@@ -116,6 +116,7 @@
           }
 
           // Filter by Features (OR logic - match any selected)
+          // This now includes both features and availability terms
           if (selectedFeatures.length > 0) {
             shouldShow =
               shouldShow &&
